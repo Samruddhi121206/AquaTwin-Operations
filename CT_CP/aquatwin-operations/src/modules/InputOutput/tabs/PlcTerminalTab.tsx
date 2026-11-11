@@ -294,3 +294,4 @@ export const PlcTerminalTab: React.FC<PlcTerminalTabProps> = ({
     </div>
   );
 };
+

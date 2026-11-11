@@ -587,3 +587,4 @@ export const INITIAL_TERMINAL_LOGS: TerminalLogMessage[] = [
     text: 'Gateway Read-Only safety interlock active. Output writes blocked per plant safety policy.',
   },
 ];
+

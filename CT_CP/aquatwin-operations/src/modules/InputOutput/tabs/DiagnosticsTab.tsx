@@ -265,3 +265,4 @@ export const DiagnosticsTab: React.FC<DiagnosticsTabProps> = ({ device, tags }) 
     </div>
   );
 };
+

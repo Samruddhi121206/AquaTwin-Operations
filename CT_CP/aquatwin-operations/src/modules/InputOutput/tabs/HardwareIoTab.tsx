@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { ExtendedPlcTag, PlcHardwareModule } from '../types';
 import { TagEditorModal } from '../components/TagEditorModal';
+import { PlcRackVisualizer } from '../components/PlcRackVisualizer';
 import { SimulatedBadge } from '../../../components/shared/SimulatedBadge';
 import { QualityIcon } from '../../../components/shared/QualityIcon';
 import {
@@ -20,6 +21,8 @@ import {
   AlertTriangle,
   Plus,
   SlidersHorizontal,
+  Monitor,
+  LayoutGrid,
 } from 'lucide-react';
 
 interface HardwareIoTabProps {
@@ -32,6 +35,49 @@ export const HardwareIoTab: React.FC<HardwareIoTabProps> = ({ modules, tags, onU
   const [selectedSlot, setSelectedSlot] = useState<number | 'ALL'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [editingTag, setEditingTag] = useState<ExtendedPlcTag | null>(null);
+  const [viewMode, setViewMode] = useState<'VISUAL_RACK' | 'BACKPLANE_CARDS'>('VISUAL_RACK');
+
+  // Mapping of 8 switches on P1-08SIM to Digital Input tags
+  const SIM_SWITCH_TAG_MAP: Record<number, string> = {
+    1: 'P101_RUN_FB',
+    2: 'P101_TRIP',
+    3: 'P201_RUN_FB',
+    4: 'XV101_OPEN_FB',
+    5: 'XV101_CLOSE_FB',
+    6: 'TK101_LSH',
+    7: 'TK101_LSL',
+  };
+
+  const handleToggleSimulatorSwitch = (channel: number, value: boolean) => {
+    const targetTagId = SIM_SWITCH_TAG_MAP[channel];
+    if (targetTagId) {
+      const targetTag = tags.find((t) => t.id === targetTagId);
+      if (targetTag) {
+        onUpdateTag({
+          ...targetTag,
+          currentValue: value,
+          quality: 'SIMULATED',
+          lastUpdate: 'Just now',
+        });
+      }
+    }
+  };
+
+  const handleRackSelectSlot = (slot: number | string) => {
+    if (slot === 'PWR' || slot === 'CPU') {
+      setSelectedSlot(0); // Slot 0 CPU
+    } else if (slot === 1) {
+      setSelectedSlot(4); // Slot 4 DO Relay
+    } else if (slot === 2) {
+      setSelectedSlot(2); // Slot 2 DI
+    } else if (slot === 3) {
+      setSelectedSlot(2); // Slot 2 DI (Simulator)
+    } else if (slot === 4) {
+      setSelectedSlot(1); // Slot 1 AI
+    } else if (typeof slot === 'number') {
+      setSelectedSlot(slot);
+    }
+  };
 
   const filteredTags = tags.filter((t) => {
     if (selectedSlot !== 'ALL') {
@@ -80,69 +126,120 @@ export const HardwareIoTab: React.FC<HardwareIoTabProps> = ({ modules, tags, onU
 
   return (
     <div className="space-y-5">
-      {/* Rack Slot Architecture Visualizer */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                PLC Hardware Rack & Expansion Slots (Rack 0)
-              </h3>
-              <SimulatedBadge verified={false} text="CHASSIS BACKPLANE" />
-            </div>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
-              Click a module slot to filter associated hardware I/O channels below
-            </p>
-          </div>
+      {/* Visualizer Mode Header Toolbar */}
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 shadow-xs">
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+          <span className="font-bold text-xs text-slate-800 dark:text-slate-200">
+            PLC Hardware Configuration & I/O Rack
+          </span>
+          <SimulatedBadge verified={false} text="CHASSIS BACKPLANE" />
+        </div>
 
+        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
           <button
-            onClick={() => setSelectedSlot('ALL')}
-            className={`px-3 py-1 text-xs rounded-lg font-mono font-medium transition ${
-              selectedSlot === 'ALL'
-                ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+            onClick={() => setViewMode('VISUAL_RACK')}
+            className={`px-3 py-1 text-xs rounded-md font-mono font-medium flex items-center gap-1.5 transition ${
+              viewMode === 'VISUAL_RACK'
+                ? 'bg-cyan-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            Show All Slots ({modules.length})
+            <Monitor className="w-3.5 h-3.5" />
+            <span>Interactive PLC Rack</span>
+          </button>
+          <button
+            onClick={() => setViewMode('BACKPLANE_CARDS')}
+            className={`px-3 py-1 text-xs rounded-md font-mono font-medium flex items-center gap-1.5 transition ${
+              viewMode === 'BACKPLANE_CARDS'
+                ? 'bg-cyan-600 text-white shadow-xs font-bold'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Chassis Slot Cards</span>
           </button>
         </div>
-
-        {/* Rack Slots Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-3">
-          {modules.map((m) => {
-            const isSelected = selectedSlot === m.slot;
-            return (
-              <div
-                key={m.id}
-                onClick={() => setSelectedSlot(m.slot)}
-                className={`cursor-pointer p-3 rounded-xl border-2 transition-all duration-200 flex flex-col justify-between ${
-                  isSelected
-                    ? 'border-cyan-500 bg-cyan-500/10 shadow-md scale-102'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                    <span>SLOT {m.slot}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  </div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-slate-100 mt-1 line-clamp-1">
-                    {m.name}
-                  </div>
-                  <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono mt-0.5">
-                    {m.model}
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-500">
-                  <span>{m.type}</span>
-                  <span>{m.channelsCount} Ch</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
+
+      {/* 1. Interactive PLC Rack Visualizer (Productivity1000 Reference) */}
+      {viewMode === 'VISUAL_RACK' && (
+        <PlcRackVisualizer
+          tags={tags}
+          onToggleSimulatorSwitch={handleToggleSimulatorSwitch}
+          onSelectSlot={handleRackSelectSlot}
+          onSelectTagForEdit={(tagId) => {
+            const found = tags.find((t) => t.id === tagId);
+            if (found) setEditingTag(found);
+          }}
+        />
+      )}
+
+      {/* 2. Alternative Chassis Slot Architecture Grid */}
+      {viewMode === 'BACKPLANE_CARDS' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  PLC Hardware Rack & Expansion Slots (Rack 0)
+                </h3>
+                <SimulatedBadge verified={false} text="CHASSIS BACKPLANE" />
+              </div>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">
+                Click a module slot to filter associated hardware I/O channels below
+              </p>
+            </div>
+
+            <button
+              onClick={() => setSelectedSlot('ALL')}
+              className={`px-3 py-1 text-xs rounded-lg font-mono font-medium transition ${
+                selectedSlot === 'ALL'
+                  ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30'
+                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              Show All Slots ({modules.length})
+            </button>
+          </div>
+
+          {/* Rack Slots Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pt-3">
+            {modules.map((m) => {
+              const isSelected = selectedSlot === m.slot;
+              return (
+                <div
+                  key={m.id}
+                  onClick={() => setSelectedSlot(m.slot)}
+                  className={`cursor-pointer p-3 rounded-xl border-2 transition-all duration-200 flex flex-col justify-between ${
+                    isSelected
+                      ? 'border-cyan-500 bg-cyan-500/10 shadow-md scale-102'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                      <span>SLOT {m.slot}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 mt-1 line-clamp-1">
+                      {m.name}
+                    </div>
+                    <div className="text-[10px] text-cyan-600 dark:text-cyan-400 font-mono mt-0.5">
+                      {m.model}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-500">
+                    <span>{m.type}</span>
+                    <span>{m.channelsCount} Ch</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Channel Mapping Table & Actions */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm flex flex-col">
@@ -289,3 +386,4 @@ export const HardwareIoTab: React.FC<HardwareIoTabProps> = ({ modules, tags, onU
     </div>
   );
 };
+

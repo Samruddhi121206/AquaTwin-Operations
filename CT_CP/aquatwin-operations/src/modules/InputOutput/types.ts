@@ -80,3 +80,4 @@ export interface PlcDeviceConfig {
   mode: 'VIRTUAL' | 'REAL';
   readOnly: boolean;
 }
+

@@ -306,3 +306,4 @@ export const PlcSetupTab: React.FC<PlcSetupTabProps> = ({ device, onUpdateDevice
     </div>
   );
 };
+
