@@ -31,8 +31,13 @@ export const TopHeader: React.FC = () => {
   }, []);
 
   const moduleTitles: Record<string, { title: string; subtitle: string }> = {
-    dashboard: { title: 'Plant Overview & KPIs', subtitle: 'Live telemetry, tank balances and operating summary' },
+    landing: { title: 'Platform Overview', subtitle: '4-Module industrial operations launchpad' },
+    plant: { title: '01. Plant Operations & Tank Simulation', subtitle: 'Live process mimic, dynamic tank physics, pumps, valves & alarms' },
+    io: { title: '02. Dedicated PLC Input / Output', subtitle: 'S7-1500 controller overview, DI feedback, AI 4-20mA & outputs' },
+    control_panel: { title: '03. Electrical Control Panel & Wiring', subtitle: 'Siemens S7 cabinet layout, 25 callouts & interactive signal-path tracing' },
+    analysis: { title: '04. Performance Trends, Water Quality & Reports', subtitle: 'Process trends, chemical water quality, energy KPIs & compliance reports' },
     operations: { title: 'Live Operations (P&ID)', subtitle: 'Piping & Instrumentation Diagram with interactive equipment' },
+    dashboard: { title: 'Plant Summary & KPIs', subtitle: 'Live telemetry, tank balances and operating summary' },
     twin: { title: 'Digital Twin Simulation', subtitle: 'Dynamic mass balance model, what-if scenarios & PID level control' },
     equipment: { title: 'Equipment Registry', subtitle: 'Asset specifications, vibration, thermal metrics & health scores' },
     alarms: { title: 'Alarms & Events', subtitle: 'ISA-18.2 compliant alarm management, acknowledgements & logs' },

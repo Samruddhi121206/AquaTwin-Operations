@@ -11,29 +11,27 @@ import {
   Workflow,
   Cpu,
   Layers,
-  AlertTriangle,
-  Wrench,
-  Droplets,
-  Zap,
   BarChart3,
   Sliders,
+  Droplets,
   Play,
   Pause,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavItem {
   id: ModuleType;
+  number?: string;
   label: string;
   icon: React.ElementType;
-  badge?: number;
+  badge?: string;
 }
 
 export const Sidebar: React.FC = () => {
   const {
     activeModule,
     setActiveModule,
-    alarms,
     isSimulating,
     toggleSimulation,
     simulationSpeed,
@@ -42,114 +40,166 @@ export const Sidebar: React.FC = () => {
     telemetry,
   } = usePlant();
 
-  const unacknowledgedAlarms = alarms.filter((a) => !a.acknowledged).length;
-
+  // Primary 4 Modules + Landing + Settings
   const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Plant Dashboard', icon: LayoutDashboard },
-    { id: 'operations', label: 'Live Operations (P&ID)', icon: Workflow },
-    { id: 'twin', label: 'Digital Twin Simulation', icon: Cpu },
-    { id: 'equipment', label: 'Equipment Registry', icon: Layers },
-    { id: 'alarms', label: 'Alarms & Events', icon: AlertTriangle, badge: unacknowledgedAlarms },
-    { id: 'maintenance', label: 'Maintenance & Work Orders', icon: Wrench },
-    { id: 'water_quality', label: 'Water Quality Telemetry', icon: Droplets },
-    { id: 'energy', label: 'Energy & Performance', icon: Zap },
-    { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Settings & Audit Logs', icon: Sliders },
+    {
+      id: 'landing',
+      label: 'Platform Overview',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'plant',
+      number: '01',
+      label: 'Plant',
+      icon: Workflow,
+      badge: `${telemetry.tk101.currentLevelPercent.toFixed(0)}%`,
+    },
+    {
+      id: 'io',
+      number: '02',
+      label: 'Input / Output',
+      icon: Cpu,
+      badge: 'PLC',
+    },
+    {
+      id: 'control_panel',
+      number: '03',
+      label: 'Control Panel',
+      icon: Layers,
+      badge: '25',
+    },
+    {
+      id: 'analysis',
+      number: '04',
+      label: 'Analysis',
+      icon: BarChart3,
+    },
+    {
+      id: 'settings',
+      label: 'Settings & Audit',
+      icon: Sliders,
+    },
   ];
 
   return (
     <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col h-screen shrink-0 text-slate-700 dark:text-slate-300 select-none transition-colors">
       {/* Brand Header */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+      <div
+        onClick={() => setActiveModule('landing')}
+        className="cursor-pointer p-4 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-850 transition"
+      >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-cyan-500/10 dark:bg-cyan-600/20 border border-cyan-500/20 dark:border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 font-bold shadow-xs">
             <Droplets className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
           </div>
           <div>
-            <h1 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white leading-tight">AquaTwin</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Operations & Digital Twin</p>
+            <h1 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white leading-tight">
+              AquaTwin
+            </h1>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+              4-Module Operations Platform
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <div className="px-3 pb-2 text-[11px] font-semibold tracking-wider text-slate-400 dark:text-slate-400 uppercase">
-          Modules & Workflows
+      {/* Primary Navigation List */}
+      <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+        <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono">
+          Main Modules
         </div>
+
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = activeModule === item.id;
+          // Check if current activeModule matches item id or any legacy alias
+          const isSelected =
+            activeModule === item.id ||
+            (item.id === 'plant' &&
+              ['operations', 'dashboard', 'twin', 'equipment', 'alarms', 'maintenance'].includes(
+                activeModule
+              )) ||
+            (item.id === 'analysis' &&
+              ['water_quality', 'energy', 'reports'].includes(activeModule));
+
           return (
             <button
               key={item.id}
               onClick={() => setActiveModule(item.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all group ${
-                isActive
-                  ? 'bg-cyan-50 dark:bg-cyan-500/15 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/30 shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group ${
+                isSelected
+                  ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-semibold shadow-xs'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100'
               }`}
             >
-              <div className="flex items-center gap-2.5 truncate">
+              <div className="flex items-center gap-3">
                 <Icon
-                  className={`w-4 h-4 shrink-0 transition-colors ${
-                    isActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
+                  className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
+                    isSelected
+                      ? 'text-cyan-600 dark:text-cyan-400'
+                      : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'
                   }`}
                 />
-                <span className="truncate">{item.label}</span>
+                <div className="text-left">
+                  <span className="block leading-tight">
+                    {item.number && (
+                      <span className="font-mono text-[10px] opacity-60 mr-1.5">
+                        {item.number}.
+                      </span>
+                    )}
+                    {item.label}
+                  </span>
+                </div>
               </div>
-              {item.badge !== undefined && item.badge > 0 ? (
+
+              {item.badge && (
                 <span
-                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums ${
-                    isActive
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30'
+                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                    isSelected
+                      ? 'bg-cyan-500/20 text-cyan-700 dark:text-cyan-300'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                   }`}
                 >
                   {item.badge}
                 </span>
-              ) : null}
+              )}
             </button>
           );
         })}
       </nav>
 
-      {/* Simulation Engine Widget */}
-      <div className="p-3 m-3 rounded-lg bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 text-xs">
-        <div className="flex items-center justify-between mb-2">
+      {/* Virtual PLC Simulator Status Box */}
+      <div className="p-3 mx-3 mb-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+        <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5">
             <div
               className={`w-2 h-2 rounded-full ${
-                isSimulating ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500'
+                isSimulating
+                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
+                  : 'bg-amber-500'
               }`}
             />
-            <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200">
-              {isSimulating ? 'SIMULATION RUNNING' : 'SIMULATION PAUSED'}
+            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 uppercase font-mono">
+              {isSimulating ? 'SIMULATION TICK' : 'SIMULATION FROZEN'}
             </span>
           </div>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">1.0s/tick</span>
+          <span className="text-[10px] text-slate-500 font-mono">1.0s</span>
         </div>
 
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 leading-relaxed">
-          Mass Balance: <span className="text-emerald-600 dark:text-emerald-400 font-mono font-medium">Nominal</span> (Qf = Qp + Qr)
-        </p>
-
-        {/* Speed and Action Buttons */}
-        <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-200 dark:border-slate-800/60">
+        <div className="flex items-center justify-between gap-1 pt-2 border-t border-slate-200 dark:border-slate-800/60">
           <div className="flex items-center gap-1">
             <button
               onClick={toggleSimulation}
               title={isSimulating ? 'Pause Simulation' : 'Resume Simulation'}
-              className="p-1.5 rounded bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs transition"
+              className="p-1.5 rounded bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition"
             >
-              {isSimulating ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              {isSimulating ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
             </button>
             <button
               onClick={resetSimulation}
-              title="Reset to Nominal Baseline"
-              className="p-1.5 rounded bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs transition"
+              title="Reset to Baseline"
+              className="p-1.5 rounded bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <RotateCcw className="w-3 h-3" />
             </button>
           </div>
 
@@ -158,10 +208,10 @@ export const Sidebar: React.FC = () => {
               <button
                 key={speed}
                 onClick={() => setSimulationSpeed(speed)}
-                className={`px-1.5 py-0.5 text-[10px] font-mono rounded transition ${
+                className={`px-1.5 py-0.5 text-[9px] font-mono rounded transition ${
                   simulationSpeed === speed
-                    ? 'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-slate-950 font-bold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    ? 'bg-cyan-600 text-white font-bold'
+                    : 'text-slate-600 dark:text-slate-400'
                 }`}
               >
                 {speed}x
@@ -172,18 +222,18 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Production Quick Footer */}
-      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
+      <div className="px-4 py-3 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between font-mono">
         <div>
-          <span>Permeate Flow</span>
-          <p className="text-slate-900 dark:text-slate-200 font-mono font-semibold">
-            {telemetry.ro_permeateFlowM3h} m³/h
-          </p>
+          <span className="text-[10px] text-slate-400 block">Permeate</span>
+          <span className="text-slate-900 dark:text-slate-200 font-bold">
+            {telemetry.ro_permeateFlowM3h.toFixed(1)} m³/h
+          </span>
         </div>
         <div className="text-right">
-          <span>Recovery</span>
-          <p className="text-cyan-700 dark:text-cyan-400 font-mono font-semibold">
-            {telemetry.ro_recoveryPercent}%
-          </p>
+          <span className="text-[10px] text-slate-400 block">Recovery</span>
+          <span className="text-cyan-600 dark:text-cyan-400 font-bold">
+            {telemetry.ro_recoveryPercent.toFixed(1)}%
+          </span>
         </div>
       </div>
     </aside>

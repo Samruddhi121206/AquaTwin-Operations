@@ -4,16 +4,22 @@
  */
 
 export type ModuleType =
-  | 'dashboard'
+  | 'landing'
+  | 'plant'
+  | 'io'
+  | 'control_panel'
+  | 'analysis'
+  | 'settings'
+  // Legacy aliases
   | 'operations'
+  | 'dashboard'
   | 'twin'
   | 'equipment'
   | 'alarms'
   | 'maintenance'
   | 'water_quality'
   | 'energy'
-  | 'reports'
-  | 'settings';
+  | 'reports';
 
 export type EquipmentStatus = 'running' | 'standby' | 'warning' | 'tripped' | 'maintenance';
 
@@ -189,3 +195,7 @@ export interface DigitalTwinScenario {
   chemicalDosingMultiplier: number;
   feedFlowOffset: number;
 }
+
+export * from './plc';
+export * from './io';
+export * from './commands';

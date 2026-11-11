@@ -470,7 +470,7 @@ const PlantContext = createContext<PlantContextType | null>(null);
 
 export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [telemetry, setTelemetry] = useState<PlantTelemetry>(INITIAL_TELEMETRY);
-  const [activeModule, setActiveModule] = useState<ModuleType>('dashboard');
+  const [activeModule, setActiveModule] = useState<ModuleType>('landing');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   const [isSimulating, setIsSimulating] = useState<boolean>(true);

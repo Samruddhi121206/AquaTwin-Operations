@@ -5,6 +5,8 @@
 
 import React, { useState } from 'react';
 import { PidDiagram } from './PidDiagram';
+import { LiveBottomTabs } from './LiveBottomTabs';
+import { ModeBanner } from '../../shared/ModeBanner';
 import { usePlant } from '../../../context/PlantContext';
 import {
   ShieldCheck,
@@ -22,7 +24,10 @@ export const LiveOperationsView: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Top Banner & Operating Mode */}
+      {/* Region A: Top Operating Mode & Hardware Banner */}
+      <ModeBanner />
+
+      {/* Process Header & Interlock Safety Strip */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400">
@@ -90,7 +95,7 @@ export const LiveOperationsView: React.FC = () => {
         </button>
       </div>
 
-      {/* Tab Contents */}
+      {/* Region B: Process Mimic Schematic */}
       {activeTab === 'pid' ? (
         <PidDiagram />
       ) : (
@@ -174,6 +179,9 @@ export const LiveOperationsView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Region D: Bottom Tab Diagnostics Container */}
+      <LiveBottomTabs />
     </div>
   );
 };
