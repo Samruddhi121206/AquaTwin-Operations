@@ -195,3 +195,4 @@ export const PlantView: React.FC = () => {
     </div>
   );
 };
+
