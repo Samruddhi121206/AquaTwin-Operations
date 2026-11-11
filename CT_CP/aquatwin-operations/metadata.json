@@ -1,0 +1,6 @@
+{
+  "name": "AquaTwin Operations",
+  "description": "Industrial Water Treatment ERP and Digital Twin Simulation Platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

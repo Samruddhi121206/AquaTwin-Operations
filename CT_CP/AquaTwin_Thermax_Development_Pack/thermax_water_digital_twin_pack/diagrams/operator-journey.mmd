@@ -1,0 +1,15 @@
+flowchart TD
+  A[Sign in] --> B[Select assigned plant]
+  B --> C[Overview: status and active alarms]
+  C --> D[Open Live Operations]
+  D --> E[Select tank / pump / RO asset]
+  E --> F[Review values, trends, quality and history]
+  F --> G{Action needed?}
+  G -->|No| H[Continue monitoring]
+  G -->|Acknowledge alarm| I[Acknowledge with reason]
+  G -->|Maintenance| J[Create / update work order]
+  G -->|Simulation command| K[Confirm virtual command]
+  I --> L[Audit event recorded]
+  J --> L
+  K --> L
+  L --> H

@@ -1,0 +1,14 @@
+stateDiagram-v2
+  [*] --> Requested
+  Requested --> Rejected: auth / mode / validation fails
+  Requested --> Validated: checks pass
+  Validated --> Queued: virtual PLC or approved gateway
+  Queued --> Acknowledged: controller acknowledges
+  Acknowledged --> Completed: process feedback confirms
+  Queued --> Failed: timeout / execution error
+  Acknowledged --> Failed: feedback not achieved
+  Requested --> Cancelled: cancelled before dispatch
+  Rejected --> [*]
+  Completed --> [*]
+  Failed --> [*]
+  Cancelled --> [*]

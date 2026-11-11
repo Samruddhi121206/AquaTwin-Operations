@@ -1,0 +1,133 @@
+{
+  "schemaVersion": "1.0.0",
+  "plant": {
+    "code": "DEMO-WTP-01",
+    "name": "Demo Water Treatment Plant",
+    "mode": "simulation",
+    "designStatus": "assumed",
+    "timezone": "Asia/Kolkata"
+  },
+  "notice": "Illustrative demo configuration only. Not a Thermax-approved plant design. Replace with approved site documents before engineering use.",
+  "processAreas": [
+    {
+      "id": "raw-water",
+      "name": "Raw Water Storage & Transfer"
+    },
+    {
+      "id": "ro",
+      "name": "Reverse Osmosis"
+    }
+  ],
+  "assets": [
+    {
+      "tag": "TK-101",
+      "name": "Raw Water Storage Tank",
+      "type": "tank",
+      "area": "raw-water",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "LIT-101",
+      "name": "Tank Level Transmitter",
+      "type": "instrument",
+      "area": "raw-water",
+      "unit": "%",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "P-101",
+      "name": "Transfer Pump",
+      "type": "pump",
+      "area": "raw-water",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "FIT-101",
+      "name": "Transfer Flow Transmitter",
+      "type": "instrument",
+      "area": "raw-water",
+      "unit": "m3/h",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "P-201",
+      "name": "RO Feed Pump",
+      "type": "pump",
+      "area": "ro",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "F-201",
+      "name": "Self-Cleaning Filter",
+      "type": "filter",
+      "area": "ro",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "F-202",
+      "name": "Cartridge Filter",
+      "type": "filter",
+      "area": "ro",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "P-202",
+      "name": "RO High-Pressure Pump",
+      "type": "pump",
+      "area": "ro",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "RO-201",
+      "name": "RO Membrane Train",
+      "type": "ro_train",
+      "area": "ro",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "FIT-202",
+      "name": "Permeate Flow Transmitter",
+      "type": "instrument",
+      "area": "ro",
+      "unit": "m3/h",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "AIT-201",
+      "name": "Permeate Conductivity Analyser",
+      "type": "instrument",
+      "area": "ro",
+      "unit": "uS/cm",
+      "designStatus": "assumed"
+    },
+    {
+      "tag": "TK-201",
+      "name": "Permeate Storage Tank",
+      "type": "tank",
+      "area": "ro",
+      "designStatus": "assumed"
+    }
+  ],
+  "simulationDefaults": {
+    "timeStepSeconds": 1,
+    "tank": {
+      "diameterM": 4.0,
+      "workingHeightM": 5.0,
+      "initialLevelPercent": 62.4
+    },
+    "flowsM3PerHour": {
+      "inlet": 10.0,
+      "transferOutlet": 6.0,
+      "roFeed": 5.0,
+      "roPermeate": 3.5,
+      "roReject": 1.5
+    }
+  },
+  "units": {
+    "flow": "m3/h",
+    "level": "%",
+    "pressure": "bar",
+    "volume": "m3",
+    "conductivity": "uS/cm"
+  }
+}
