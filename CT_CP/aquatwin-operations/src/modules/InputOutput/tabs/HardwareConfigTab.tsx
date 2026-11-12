@@ -368,7 +368,7 @@ export const HardwareConfigTab: React.FC<HardwareConfigTabProps> = ({
                 {catalogueExpanded['Power Supply'] && (
                   <div className="pl-4 mt-1 space-y-1">
                     <div
-                      onClick={() => onSelectSlot('POW')}
+                      onClick={() => setSelectedSlot('POW')}
                       className="cursor-pointer p-1.5 rounded hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-2 border border-transparent hover:border-blue-200"
                     >
                       {/* Realistic Thumbnail matching screenshot */}
@@ -406,7 +406,7 @@ export const HardwareConfigTab: React.FC<HardwareConfigTabProps> = ({
                 {catalogueExpanded.CPU && (
                   <div className="pl-4 mt-1 space-y-1">
                     <div
-                      onClick={() => onSelectSlot(1)}
+                      onClick={() => setSelectedSlot(1)}
                       className="cursor-pointer p-1.5 rounded hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-2 border border-transparent hover:border-blue-200"
                     >
                       <div className="w-6 h-8 bg-slate-900 rounded-xs border border-slate-600 flex flex-col justify-between p-0.5 shrink-0 shadow-2xs">
@@ -443,7 +443,7 @@ export const HardwareConfigTab: React.FC<HardwareConfigTabProps> = ({
                 {catalogueExpanded['Discrete Input'] && (
                   <div className="pl-4 mt-1 space-y-1">
                     <div
-                      onClick={() => onSelectSlot(2)}
+                      onClick={() => setSelectedSlot(2)}
                       className="cursor-pointer p-1.5 rounded hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-2 border border-transparent hover:border-blue-200"
                     >
                       <div className="w-6 h-8 bg-slate-850 rounded-xs border border-slate-600 flex flex-col justify-around p-0.5 shrink-0 shadow-2xs">
@@ -482,7 +482,7 @@ export const HardwareConfigTab: React.FC<HardwareConfigTabProps> = ({
                 {catalogueExpanded['Discrete Output'] && (
                   <div className="pl-4 mt-1 space-y-1">
                     <div
-                      onClick={() => onSelectSlot(3)}
+                      onClick={() => setSelectedSlot(3)}
                       className="cursor-pointer p-1.5 rounded hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-2 border border-transparent hover:border-blue-200"
                     >
                       <div className="w-6 h-8 bg-slate-850 rounded-xs border border-slate-600 flex flex-col justify-around p-0.5 shrink-0 shadow-2xs">
@@ -521,7 +521,7 @@ export const HardwareConfigTab: React.FC<HardwareConfigTabProps> = ({
                 {catalogueExpanded['Analog Input'] && (
                   <div className="pl-4 mt-1 space-y-1">
                     <div
-                      onClick={() => onSelectSlot(4)}
+                      onClick={() => setSelectedSlot(4)}
                       className="cursor-pointer p-1.5 rounded hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-2 border border-transparent hover:border-blue-200"
                     >
                       <div className="w-6 h-8 bg-slate-850 rounded-xs border border-blue-400 flex flex-col justify-between p-0.5 shrink-0 shadow-2xs">
@@ -558,7 +558,7 @@ export const HardwareConfigTab: React.FC<HardwareConfigTabProps> = ({
                 {catalogueExpanded['Analog Output'] && (
                   <div className="pl-4 mt-1 space-y-1">
                     <div
-                      onClick={() => onSelectSlot(5)}
+                      onClick={() => setSelectedSlot(5)}
                       className="cursor-pointer p-1.5 rounded hover:bg-blue-50 dark:hover:bg-slate-800 flex items-center gap-2 border border-transparent hover:border-blue-200"
                     >
                       <div className="w-6 h-8 bg-slate-850 rounded-xs border border-purple-400 flex flex-col justify-between p-0.5 shrink-0 shadow-2xs">

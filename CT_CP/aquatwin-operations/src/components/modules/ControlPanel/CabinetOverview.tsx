@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 
 export const CabinetOverview: React.FC = () => {
+  const [cabinetViewMode, setCabinetViewMode] = useState<'CAD' | 'PHOTO' | 'BLUEPRINT'>('CAD');
   const [doorOpen, setDoorOpen] = useState<boolean>(true);
   const [selectedCallout, setSelectedCallout] = useState<PanelComponent | null>(
     PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 21) || PANEL_CALLOUTS_25[0]
@@ -52,29 +53,65 @@ export const CabinetOverview: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Door Toggle */}
+            {/* View Mode Switcher */}
             <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-[11px]">
               <button
-                onClick={() => setDoorOpen(false)}
+                onClick={() => setCabinetViewMode('CAD')}
                 className={`px-2.5 py-1 rounded font-medium transition ${
-                  !doorOpen
-                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                  cabinetViewMode === 'CAD'
+                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs font-semibold'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                Front Door (Closed)
+                Interactive Chassis
               </button>
               <button
-                onClick={() => setDoorOpen(true)}
+                onClick={() => setCabinetViewMode('PHOTO')}
                 className={`px-2.5 py-1 rounded font-medium transition ${
-                  doorOpen
-                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                  cabinetViewMode === 'PHOTO'
+                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs font-semibold'
                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
-                Internal Chassis (Open)
+                Real Panel Photo
+              </button>
+              <button
+                onClick={() => setCabinetViewMode('BLUEPRINT')}
+                className={`px-2.5 py-1 rounded font-medium transition ${
+                  cabinetViewMode === 'BLUEPRINT'
+                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                Siemens Blueprint (1-25)
               </button>
             </div>
+
+            {/* Door Toggle (CAD mode only) */}
+            {cabinetViewMode === 'CAD' && (
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-[11px]">
+                <button
+                  onClick={() => setDoorOpen(false)}
+                  className={`px-2 py-1 rounded font-medium transition ${
+                    !doorOpen
+                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Door Closed
+                </button>
+                <button
+                  onClick={() => setDoorOpen(true)}
+                  className={`px-2 py-1 rounded font-medium transition ${
+                    doorOpen
+                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Chassis Open
+                </button>
+              </div>
+            )}
 
             <button
               onClick={() => setShowCalloutBadges(!showCalloutBadges)}
@@ -85,14 +122,160 @@ export const CabinetOverview: React.FC = () => {
               }`}
             >
               <Eye className="w-3 h-3" />
-              <span>{showCalloutBadges ? 'Callouts 1-25: ON' : 'Callouts: OFF'}</span>
+              <span>{showCalloutBadges ? 'Callouts: ON' : 'Callouts: OFF'}</span>
             </button>
           </div>
         </div>
 
         {/* Physical Cabinet Layout Representation */}
         <div className="flex-1 min-h-[560px] relative mt-4 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 p-4 overflow-y-auto">
-          {!doorOpen ? (
+          {cabinetViewMode === 'PHOTO' ? (
+            /* REAL INDUSTRIAL ELECTRICAL PANEL PHOTOGRAPH (Matching User Image 2) */
+            <div className="space-y-4">
+              <div className="bg-slate-900 border border-slate-750 p-3 rounded-lg flex flex-wrap items-center justify-between text-xs font-mono text-slate-300">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-white">Physical Panel Photograph: 4-Tier DIN Rail Architecture</span>
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  Select a tier to inspect real installed components
+                </div>
+              </div>
+
+              {/* Tier Quick Inspection Buttons */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono">
+                <button
+                  onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 19) || null)}
+                  className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left transition"
+                >
+                  <div className="font-bold text-amber-500 text-[11px]">TIER 1 (TOP)</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-400">Breakers & MPCBs</div>
+                </button>
+                <button
+                  onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 18) || null)}
+                  className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left transition"
+                >
+                  <div className="font-bold text-yellow-500 text-[11px]">TIER 2 (MID-UPPER)</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-400">Contactors & Safety Relays</div>
+                </button>
+                <button
+                  onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 6) || null)}
+                  className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left transition"
+                >
+                  <div className="font-bold text-cyan-500 text-[11px]">TIER 3 (CORE)</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-400">PLC + SITOP 24V PSU</div>
+                </button>
+                <button
+                  onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 22) || null)}
+                  className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left transition"
+                >
+                  <div className="font-bold text-emerald-500 text-[11px]">TIER 4 (BOTTOM)</div>
+                  <div className="text-[10px] text-slate-600 dark:text-slate-400">Terminal Strip X1</div>
+                </button>
+              </div>
+
+              {/* High-Resolution Cabinet Interior Photo Container */}
+              <div className="relative rounded-lg overflow-hidden border-2 border-slate-700 bg-black shadow-2xl flex items-center justify-center">
+                <img
+                  src="/assets/cabinet/real_electrical_panel_interior.jpg"
+                  alt="Industrial Electrical Control Panel Interior"
+                  className="w-full h-auto max-h-[620px] object-contain rounded"
+                />
+
+                {/* Interactive Overlay Badges across Tiers */}
+                {showCalloutBadges && (
+                  <div className="absolute inset-0 pointer-events-none">
+                    {/* Tier 1 Badge */}
+                    <div className="absolute top-[8%] left-[20%] pointer-events-auto">
+                      <button
+                        onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 19) || null)}
+                        className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
+                      >
+                        <span>19</span>
+                        <span>MCBs & Starters</span>
+                      </button>
+                    </div>
+
+                    {/* Tier 2 Contactors Badge */}
+                    <div className="absolute top-[28%] left-[20%] pointer-events-auto">
+                      <button
+                        onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 18) || null)}
+                        className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
+                      >
+                        <span>18</span>
+                        <span>K1-K15 Contactors</span>
+                      </button>
+                    </div>
+
+                    {/* Tier 2 Pilz Safety Relay Badge */}
+                    <div className="absolute top-[28%] left-[62%] pointer-events-auto">
+                      <button
+                        onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 20) || null)}
+                        className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
+                      >
+                        <span>20</span>
+                        <span>Safety Relays</span>
+                      </button>
+                    </div>
+
+                    {/* Tier 3 PLC Rack Badge */}
+                    <div className="absolute top-[52%] left-[18%] pointer-events-auto">
+                      <button
+                        onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 6) || null)}
+                        className="px-2 py-0.5 rounded bg-cyan-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
+                      >
+                        <span>6</span>
+                        <span>S7 PLC Core</span>
+                      </button>
+                    </div>
+
+                    {/* Tier 3 SITOP PSU Badge */}
+                    <div className="absolute top-[52%] left-[68%] pointer-events-auto">
+                      <button
+                        onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 21) || null)}
+                        className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
+                      >
+                        <span>21</span>
+                        <span>SITOP 24V PSU</span>
+                      </button>
+                    </div>
+
+                    {/* Tier 4 Terminal Strip X1 Badge */}
+                    <div className="absolute bottom-[10%] left-[45%] pointer-events-auto">
+                      <button
+                        onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 22) || null)}
+                        className="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
+                      >
+                        <span>22</span>
+                        <span>Terminal Strip X1</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : cabinetViewMode === 'BLUEPRINT' ? (
+            /* SIEMENS BLUEPRINT SCHEMATIC (Matching User Image 1) */
+            <div className="space-y-4">
+              <div className="bg-slate-900 border border-slate-750 p-3 rounded-lg flex flex-wrap items-center justify-between text-xs font-mono text-slate-300">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <span className="font-bold text-white">Siemens S7 Industrial Enclosure Engineering Drawing (1-25)</span>
+                </div>
+                <div className="text-[11px] text-cyan-400">
+                  Dual-Door Layout: Door Closed (Left) · Chassis Open (Right)
+                </div>
+              </div>
+
+              <div className="relative rounded-lg overflow-hidden border-2 border-slate-700 bg-white shadow-2xl flex items-center justify-center p-2">
+                <img
+                  src="/assets/cabinet/siemens_control_cabinet_schematic.jpg"
+                  alt="Siemens Control Cabinet Schematic"
+                  className="w-full h-auto max-h-[640px] object-contain rounded"
+                />
+              </div>
+            </div>
+          ) : !doorOpen ? (
             /* FRONT DOOR VIEW (Matching Image 1 Left) */
             <div className="max-w-[520px] mx-auto h-[530px] bg-gradient-to-b from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900 rounded-lg border-4 border-slate-400 dark:border-slate-700 shadow-xl relative flex flex-col justify-between p-6">
               {/* Siemens Logo Header */}

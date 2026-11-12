@@ -137,7 +137,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                 onClick={() => onSelectSlot('POW')}
                 className={`w-28 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 'POW' || selectedSlot === 0
-                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                     : 'border-slate-800 hover:border-slate-600'
                 }`}
                 style={{
@@ -209,7 +209,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                 onClick={() => onSelectSlot(1)}
                 className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 1
-                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                     : 'border-slate-800 hover:border-slate-600'
                 }`}
                 style={{
@@ -276,7 +276,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                 onClick={() => onSelectSlot(2)}
                 className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 2
-                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                     : 'border-slate-800 hover:border-slate-600'
                 }`}
                 style={{
@@ -336,7 +336,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                 onClick={() => onSelectSlot(3)}
                 className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 3
-                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                     : 'border-slate-800 hover:border-slate-600'
                 }`}
                 style={{
@@ -394,7 +394,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                 onClick={() => onSelectSlot(4)}
                 className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 4
-                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                     : 'border-slate-800 hover:border-slate-600'
                 }`}
                 style={{
@@ -443,7 +443,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                 onClick={() => onSelectSlot(5)}
                 className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 5
-                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                     : 'border-slate-800 hover:border-slate-600'
                 }`}
                 style={{
@@ -489,7 +489,7 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
                   onClick={() => onSelectSlot(slotIdx)}
                   className={`w-20 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-md relative ${
                     selectedSlot === slotIdx
-                      ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                      ? 'border-emerald-500 ring-4 ring-emerald-500/40 z-20 scale-[1.02]'
                       : 'border-slate-800 hover:border-slate-600'
                   }`}
                   style={{
