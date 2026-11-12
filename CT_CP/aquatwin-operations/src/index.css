@@ -31,6 +31,58 @@
   }
 }
 
+@keyframes waterFlowForward {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+@keyframes waterFlowFast {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+@keyframes waterFlowReject {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+
+/* Subtle water flow tracer pulses inside realistic solid industrial pipes */
+.pipe-flow-feed {
+  stroke-dasharray: 8 16;
+  stroke-linecap: round;
+  animation: waterFlowForward 1.4s linear infinite;
+}
+
+.pipe-flow-hp {
+  stroke-dasharray: 6 12;
+  stroke-linecap: round;
+  animation: waterFlowFast 0.8s linear infinite;
+}
+
+.pipe-flow-permeate {
+  stroke-dasharray: 8 16;
+  stroke-linecap: round;
+  animation: waterFlowForward 1.2s linear infinite;
+}
+
+.pipe-flow-reject {
+  stroke-dasharray: 8 16;
+  stroke-linecap: round;
+  animation: waterFlowReject 1.8s linear infinite;
+}
+
 .animate-pipe-flow {
   stroke-dasharray: 6 6;
   animation: flowDash 1.2s linear infinite;
@@ -44,6 +96,16 @@
 .animate-pipe-flow-reject {
   stroke-dasharray: 6 6;
   animation: flowDash 1.5s linear infinite;
+}
+
+.hazard-stripes {
+  background: repeating-linear-gradient(
+    -45deg,
+    #eab308,
+    #eab308 10px,
+    #1e293b 10px,
+    #1e293b 20px
+  );
 }
 
 /* Custom scrollbars */

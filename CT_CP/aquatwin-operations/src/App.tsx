@@ -17,10 +17,22 @@ import { SettingsView } from './components/modules/SettingsAudit/SettingsView';
 
 const MainContent: React.FC = () => {
   const { activeModule } = usePlant();
+  const isPlantModule =
+    activeModule === 'plant' ||
+    activeModule === 'operations' ||
+    activeModule === 'dashboard' ||
+    activeModule === 'twin' ||
+    activeModule === 'equipment' ||
+    activeModule === 'alarms' ||
+    activeModule === 'maintenance';
 
   return (
-    <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <div className="max-w-[1600px] mx-auto">
+    <main
+      className={`flex-1 overflow-y-auto ${
+        isPlantModule ? 'p-3 md:p-4' : 'p-4 md:p-6'
+      } bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors`}
+    >
+      <div className={`${isPlantModule ? 'max-w-[1720px]' : 'max-w-[1600px]'} mx-auto`}>
         {activeModule === 'landing' && <LandingPage />}
 
         {/* Module 1: Plant */}
