@@ -1,6 +1,8 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
+ * AquaTwin Industrial Hardware Rack Visualizer - Mitsubishi MELSEC iQ-R
+ * Matches Reference B & D: Authentic DIN Rail Mounting, Front Panels, Screw Terminals & 3D Views
  */
 
 import React, { useState } from 'react';
@@ -14,7 +16,9 @@ import {
   AlertTriangle,
   Info,
   Maximize2,
-  Image as ImageIcon,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
   Sliders,
   ChevronRight,
   Plus,
@@ -25,7 +29,8 @@ interface MitsubishiRackVisualizerProps {
   tags: ExtendedPlcTag[];
   selectedSlot: number | 'POW' | null;
   onSelectSlot: (slot: number | 'POW') => void;
-  onOpenCatalogue?: () => void;
+  viewMode?: 'FRONT' | '3D' | 'REAL';
+  zoomLevel?: number;
 }
 
 export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> = ({
@@ -33,12 +38,10 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
   tags,
   selectedSlot,
   onSelectSlot,
-  onOpenCatalogue,
+  viewMode = 'FRONT',
+  zoomLevel = 100,
 }) => {
-  const [viewMode, setViewMode] = useState<'INTERACTIVE' | 'PHOTO'>('INTERACTIVE');
-  const [photoAngle, setPhotoAngle] = useState<'FRONT' | 'ISOMETRIC'>('FRONT');
-
-  // Check active state of digital inputs/outputs for LED indicators
+  // Check active state of digital inputs/outputs for real-time channel LEDs
   const getDiActive = (channelIndex: number) => {
     const tag = tags.find(
       (t) => t.moduleId === 'SLOT-1-DI' && t.channelIndex === channelIndex
@@ -53,516 +56,483 @@ export const MitsubishiRackVisualizer: React.FC<MitsubishiRackVisualizerProps> =
     return tag ? tag.currentValue === true : false;
   };
 
-  const cpuModule = modules.find((m) => m.type === 'CPU') || modules[0];
-  const diModule = modules.find((m) => m.slot === 1);
-  const doModule = modules.find((m) => m.slot === 2);
-  const aiModule = modules.find((m) => m.slot === 3);
-  const aoModule = modules.find((m) => m.slot === 4);
+  // 8 Rack positions: Slot 0 (Power Supply R61P), Slot 1 (CPU R08CPU), Slot 2 (RX40C7), Slot 3 (RY40NT5P), Slot 4 (R60AD8), Slot 5 (R60DA8), Slot 6 (Empty), Slot 7 (Empty)
+  const rackSlots = [
+    { slotIdx: 0, type: 'POW', model: 'R61P', name: 'Power Supply' },
+    { slotIdx: 1, type: 'CPU', model: 'R08CPU', name: 'Sequence CPU' },
+    { slotIdx: 2, type: 'DI', model: 'RX40C7', name: '16-Pt DC Input' },
+    { slotIdx: 3, type: 'DO', model: 'RY40NT5P', name: '16-Pt Transistor' },
+    { slotIdx: 4, type: 'AI', model: 'R60AD8', name: '8-Ch Analog Input' },
+    { slotIdx: 5, type: 'AO', model: 'R60DA8', name: '8-Ch Analog Output' },
+    { slotIdx: 6, type: 'EMPTY', model: '—', name: 'Empty Slot' },
+    { slotIdx: 7, type: 'EMPTY', model: '—', name: 'Empty Slot' },
+  ];
 
-  return (
-    <div className="bg-slate-900 border border-slate-750 rounded-xl overflow-hidden shadow-xl select-none font-sans">
-      {/* Top Engineering Rack Toolbar */}
-      <div className="bg-slate-850 px-4 py-2 border-b border-slate-750 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-            <span className="font-bold text-slate-100 tracking-wide font-mono">
-              MELSEC iQ-R Base Rack: R68B (8 Slots)
-            </span>
+  if (viewMode === 'REAL') {
+    return (
+      <div className="flex items-center justify-center p-6 bg-slate-900 rounded-lg border border-slate-700 min-h-[380px]">
+        <div className="relative max-w-4xl rounded-lg overflow-hidden border border-slate-700 shadow-2xl bg-black">
+          <img
+            src="/assets/mitsubishi/melsec_iq_r_front.jpg"
+            alt="Mitsubishi MELSEC iQ-R Modular Rack"
+            className="w-full h-auto object-contain max-h-[360px]"
+          />
+          <div className="absolute bottom-2 left-3 bg-black/80 backdrop-blur-xs px-3 py-1 rounded text-[11px] font-mono text-slate-300 border border-white/10">
+            Official Mitsubishi Electric MELSEC iQ-R Product Photograph (R68B Base Unit)
           </div>
-          <span className="text-[11px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded">
-            Main Base Unit • 5V DC Bus: 2.15A / 6.5A
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Switch between Interactive Vector Rack & Real Mitsubishi Photo */}
-          <div className="bg-slate-950 p-0.5 rounded-lg border border-slate-700 flex items-center text-[11px] font-mono">
-            <button
-              onClick={() => setViewMode('INTERACTIVE')}
-              className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 ${
-                viewMode === 'INTERACTIVE'
-                  ? 'bg-cyan-600 text-white font-bold shadow-xs'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Chassis Model</span>
-            </button>
-            <button
-              onClick={() => setViewMode('PHOTO')}
-              className={`px-2.5 py-1 rounded-md transition flex items-center gap-1.5 ${
-                viewMode === 'PHOTO'
-                  ? 'bg-cyan-600 text-white font-bold shadow-xs'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <ImageIcon className="w-3.5 h-3.5" />
-              <span>Real Hardware Photo</span>
-            </button>
-          </div>
-
-          {onOpenCatalogue && (
-            <button
-              onClick={onOpenCatalogue}
-              className="px-2.5 py-1 rounded-lg bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-600/30 text-[11px] font-mono flex items-center gap-1.5 transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Module</span>
-            </button>
-          )}
         </div>
       </div>
+    );
+  }
 
-      {/* Main Canvas Body */}
-      {viewMode === 'PHOTO' ? (
-        /* Real Photograph View of Mitsubishi iQ-R Rack */
-        <div className="p-4 bg-slate-950 flex flex-col items-center justify-center min-h-[340px]">
-          <div className="relative max-w-4xl rounded-lg overflow-hidden border border-slate-700 shadow-2xl bg-black">
-            <img
-              src={
-                photoAngle === 'FRONT'
-                  ? '/assets/mitsubishi/melsec_iq_r_front.jpg'
-                  : '/assets/mitsubishi/melsec_iq_r_isometric.jpg'
-              }
-              alt="Mitsubishi MELSEC iQ-R Modular PLC Rack"
-              className="w-full h-auto object-contain max-h-[380px]"
-            />
-            <div className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur-xs border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-200">
-              <span className="font-bold text-emerald-400">● Genuine Hardware Inspection</span>
-              <span className="text-[10px] text-slate-400 block">
-                Mitsubishi Electric MELSEC iQ-R R08CPU / R61P / RX40C7 / RY40NT5P / R60AD8
-              </span>
-            </div>
-            <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-xs border border-slate-700 p-1 rounded-lg text-[10px] font-mono">
-              <button
-                onClick={() => setPhotoAngle('FRONT')}
-                className={`px-2 py-0.5 rounded ${
-                  photoAngle === 'FRONT' ? 'bg-cyan-600 text-white font-bold' : 'text-slate-400'
-                }`}
-              >
-                Front View
-              </button>
-              <button
-                onClick={() => setPhotoAngle('ISOMETRIC')}
-                className={`px-2 py-0.5 rounded ${
-                  photoAngle === 'ISOMETRIC' ? 'bg-cyan-600 text-white font-bold' : 'text-slate-400'
-                }`}
-              >
-                3D Isometric
-              </button>
-            </div>
+  if (viewMode === '3D') {
+    return (
+      <div className="flex items-center justify-center p-6 bg-slate-900 rounded-lg border border-slate-700 min-h-[380px]">
+        <div className="relative max-w-4xl rounded-lg overflow-hidden border border-slate-700 shadow-2xl bg-black">
+          <img
+            src="/assets/mitsubishi/melsec_iq_r_isometric.jpg"
+            alt="Mitsubishi MELSEC iQ-R 3D Isometric View"
+            className="w-full h-auto object-contain max-h-[360px]"
+          />
+          <div className="absolute bottom-2 left-3 bg-black/80 backdrop-blur-xs px-3 py-1 rounded text-[11px] font-mono text-slate-300 border border-white/10">
+            Mitsubishi MELSEC iQ-R 3D Isometric View (R38B Base / R61P / R12CCPU-V)
           </div>
         </div>
-      ) : (
-        /* Interactive Modular Chassis View */
-        <div className="p-5 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-x-auto">
-          {/* Base Chassis Aluminum Rail Frame */}
-          <div className="min-w-[860px] bg-slate-900/90 border-2 border-slate-700 rounded-lg p-2.5 shadow-2xl relative">
-            {/* Top DIN Rail / Backplane Header */}
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] font-mono text-slate-400 px-2">
-              <div className="flex items-center gap-1.5">
-                <span className="text-red-500 font-bold">MITSUBISHI ELECTRIC</span>
-                <span>•</span>
-                <span>MELSEC iQ-R Series</span>
-              </div>
-              <div className="flex items-center gap-6">
-                <span>R68B 8-SLOT EXPANSION BACKPLANE</span>
-                <span>OPTICAL INTER-MODULE BUS: 40 Gbps</span>
-              </div>
-            </div>
+      </div>
+    );
+  }
 
-            {/* Modules Rack Slots */}
-            <div className="flex items-stretch gap-1.5 pt-1">
-              {/* SLOT 'POW' - Power Supply Module (R61P) with iconic red bezel door */}
+  // Front View — Photorealistic DIN Rail Assembly matching Reference Image 2
+  return (
+    <div className="overflow-x-auto py-3 px-1 flex items-center justify-center select-none">
+      <div
+        className="transition-transform duration-200"
+        style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'center center' }}
+      >
+        {/* DIN Rail Assembly Container with Metallic Side Mounting Flanges */}
+        <div className="relative flex items-center bg-slate-200 dark:bg-slate-800/60 p-6 rounded-xl border border-slate-300 dark:border-slate-700 shadow-inner min-w-[840px]">
+          {/* Left Aluminum Mounting Flange with Bolt Hole */}
+          <div className="w-8 h-80 bg-gradient-to-r from-slate-400 via-slate-300 to-slate-400 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 rounded-l border border-slate-400 dark:border-slate-600 flex flex-col justify-around items-center shadow-md shrink-0">
+            <div className="w-4 h-4 rounded-full bg-slate-500 dark:bg-slate-900 border border-slate-400 shadow-inner flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-700" />
+            </div>
+            <div className="w-1.5 h-24 bg-slate-500/30 rounded-full" />
+            <div className="w-4 h-4 rounded-full bg-slate-500 dark:bg-slate-900 border border-slate-400 shadow-inner flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-700" />
+            </div>
+          </div>
+
+          {/* Horizontal Brushed Aluminum DIN Rail Bar behind Modules */}
+          <div className="relative flex items-center px-1 bg-gradient-to-b from-slate-300 via-slate-100 to-slate-300 dark:from-slate-800 dark:via-slate-700 dark:to-slate-800 border-y-2 border-slate-400 dark:border-slate-600 shadow-lg py-2">
+            {/* Horizontal Rail Grooves */}
+            <div className="absolute left-0 right-0 top-3 h-1 bg-slate-400/50 dark:bg-slate-900/60 border-y border-white/20" />
+            <div className="absolute left-0 right-0 bottom-3 h-1 bg-slate-400/50 dark:bg-slate-900/60 border-y border-white/20" />
+
+            {/* Modular PLC Rack: Modules Mounted Side-by-Side */}
+            <div className="relative z-10 flex items-stretch gap-1">
+              {/* ========================================================
+                  SLOT 0: R61P POWER SUPPLY MODULE
+                  ======================================================== */}
               <div
                 onClick={() => onSelectSlot('POW')}
-                className={`w-32 rounded-lg cursor-pointer transition-all duration-200 border-2 flex flex-col justify-between overflow-hidden relative ${
-                  selectedSlot === 'POW'
-                    ? 'border-red-500 ring-2 ring-red-500/40 shadow-lg shadow-red-500/20 scale-102 z-10'
-                    : 'border-slate-700 hover:border-slate-500 bg-slate-850'
+                className={`w-28 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
+                  selectedSlot === 'POW' || selectedSlot === 0
+                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    : 'border-slate-800 hover:border-slate-600'
                 }`}
+                style={{
+                  background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
               >
-                {/* Slot Tag Header */}
-                <div className="bg-slate-800 px-2 py-1 flex items-center justify-between border-b border-slate-700">
-                  <span className="text-[10px] font-mono font-bold text-red-400">POW</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                {/* Slot Number Above Module matching Reference Image 2 */}
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  0
                 </div>
 
-                {/* Upper Module Body */}
-                <div className="p-2 space-y-1 bg-gradient-to-b from-slate-800 to-slate-850 text-center">
-                  <div className="text-[8px] font-mono text-slate-400 font-bold">R61P</div>
-                  <div className="text-[7.5px] font-mono text-slate-400">100-240VAC</div>
+                {/* Upper Black Section with Mitsubishi Logo & POWER LED */}
+                <div className="p-2 space-y-2">
+                  {/* Mitsubishi 3-Diamond Logo */}
+                  <div className="flex items-center gap-1.5 border-b border-slate-700/80 pb-1.5">
+                    <svg viewBox="0 0 100 100" className="w-3.5 h-3.5 fill-red-600 shrink-0">
+                      <polygon points="50,15 65,40 50,65 35,40" />
+                      <polygon points="20,65 35,40 20,15 5,40" transform="rotate(60 35 40)" />
+                      <polygon points="80,65 95,40 80,15 65,40" transform="rotate(-60 65 40)" />
+                    </svg>
+                    <div className="text-[7px] font-black text-white tracking-tighter font-mono leading-tight">
+                      MITSUBISHI
+                      <br />
+                      ELECTRIC
+                    </div>
+                  </div>
 
                   {/* Power Status LED */}
-                  <div className="flex items-center justify-center gap-1 pt-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                    <span className="text-[7px] font-mono font-bold text-emerald-300">POWER</span>
+                  <div className="pt-2 flex flex-col items-center justify-center gap-1">
+                    <span className="text-[7.5px] font-mono font-bold text-slate-300 tracking-wider">
+                      POWER
+                    </span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,1)]" />
                   </div>
                 </div>
 
-                {/* Lower Red Front Bezel (Signature Mitsubishi R61P Door) */}
-                <div className="h-32 bg-gradient-to-b from-red-600 via-red-700 to-red-800 p-2 flex flex-col justify-between text-white rounded-b border-t border-red-500/40">
-                  <div className="flex items-center gap-1 opacity-90">
-                    <div className="w-2 h-2 rotate-45 border border-white bg-white/30" />
-                    <span className="text-[7.5px] font-black tracking-tighter">MELSEC</span>
+                {/* Lower Signature Red Bezel Door matching Reference Image 2 & C */}
+                <div
+                  className="h-36 p-2 flex flex-col justify-between rounded-b border-t border-red-500/30"
+                  style={{
+                    background: 'linear-gradient(180deg, #dc2626 0%, #b91c1c 50%, #991b1b 100%)',
+                  }}
+                >
+                  <div className="text-[8px] font-black font-mono text-white tracking-wider text-center drop-shadow-xs">
+                    MELSEC iQ-R
                   </div>
 
-                  <div className="text-[7px] font-mono leading-tight opacity-80 text-center">
-                    5V DC 6.5A
+                  <div className="text-[6.5px] font-mono text-white/80 text-center leading-tight">
+                    100-240V AC
                     <br />
-                    OUT: READY
+                    5V DC 6.5A
                   </div>
 
-                  {/* Pull Door Tab */}
-                  <div className="h-2 bg-red-900/60 rounded-xs flex items-center justify-center text-[6px] font-mono opacity-70">
+                  <div className="h-2.5 bg-black/20 rounded-xs flex items-center justify-center text-[6px] font-mono text-white/90">
                     ▼ PULL
                   </div>
                 </div>
-              </div>
 
-              {/* SLOT 0 - CPU Module (R08CPU) */}
-              <div
-                onClick={() => onSelectSlot(0)}
-                className={`w-36 rounded-lg cursor-pointer transition-all duration-200 border-2 flex flex-col justify-between overflow-hidden relative ${
-                  selectedSlot === 0
-                    ? 'border-cyan-400 ring-2 ring-cyan-400/40 shadow-lg shadow-cyan-400/20 scale-102 z-10'
-                    : 'border-slate-700 hover:border-slate-500 bg-slate-850'
-                }`}
-              >
-                {/* Slot Tag Header */}
-                <div className="bg-slate-800 px-2 py-1 flex items-center justify-between border-b border-slate-700">
-                  <span className="text-[10px] font-mono font-bold text-cyan-400">CPU (Slot 0)</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-
-                {/* Upper Module Body: LED Matrix */}
-                <div className="p-2 space-y-1.5 bg-gradient-to-b from-slate-800 to-slate-850">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-mono font-bold text-slate-100">R08CPU</span>
-                    <span className="text-[7px] font-mono text-emerald-400 bg-emerald-950 px-1 rounded">
-                      RUN
-                    </span>
-                  </div>
-
-                  {/* CPU Status LED Cluster */}
-                  <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[6.5px] font-mono text-slate-400 bg-slate-900/80 p-1 rounded border border-slate-750">
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_rgba(52,211,153,0.8)]" />
-                      <span>READY</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                      <span>ERROR</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>PRG.RUN</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-                      <span>USER</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span>BATTERY</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                      <span>SD CARD</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Middle Port Area: USB & Gigabit LAN */}
-                <div className="p-2 space-y-1.5 bg-slate-850 border-t border-slate-750">
-                  {/* Gigabit Ethernet Port (SLMP) */}
-                  <div className="bg-slate-950 border border-slate-700 rounded p-1 flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-[6px] font-mono text-slate-400">1000BASE-T</span>
-                      <span className="text-[7px] font-mono font-bold text-cyan-400">SLMP 3E</span>
-                    </div>
-                    <div className="w-4 h-3 bg-slate-800 border border-slate-600 rounded flex items-center justify-center">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    </div>
-                  </div>
-
-                  {/* USB Port */}
-                  <div className="flex items-center justify-between text-[6.5px] font-mono text-slate-400 px-1">
-                    <span>USB (GX Works)</span>
-                    <span className="text-[6px] bg-slate-800 px-1 rounded">TYPE-C</span>
-                  </div>
-                </div>
-
-                {/* Bottom Pull Door */}
-                <div className="h-6 bg-slate-900 border-t border-slate-750 flex items-center justify-center text-[7px] font-mono text-slate-400">
-                  ▼ PULL FOR SD
+                {/* Model Label Underneath matching Reference Image 2 */}
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  R61P
                 </div>
               </div>
 
-              {/* SLOT 1 - Digital Input Module (RX40C7) */}
+              {/* ========================================================
+                  SLOT 1: R08CPU CONTROLLER MODULE
+                  ======================================================== */}
               <div
                 onClick={() => onSelectSlot(1)}
-                className={`w-28 rounded-lg cursor-pointer transition-all duration-200 border-2 flex flex-col justify-between overflow-hidden relative ${
+                className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 1
-                    ? 'border-emerald-400 ring-2 ring-emerald-400/40 shadow-lg shadow-emerald-400/20 scale-102 z-10'
-                    : 'border-slate-700 hover:border-slate-500 bg-slate-850'
+                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    : 'border-slate-800 hover:border-slate-600'
                 }`}
+                style={{
+                  background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
               >
-                <div className="bg-slate-800 px-2 py-1 flex items-center justify-between border-b border-slate-700">
-                  <span className="text-[10px] font-mono font-bold text-emerald-400">Slot 1 (DI)</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  1
                 </div>
 
-                <div className="p-1.5 space-y-1 bg-slate-800/80">
-                  <div className="text-[8.5px] font-mono font-bold text-slate-100 text-center">RX40C7</div>
-                  <div className="text-[7px] font-mono text-emerald-400 text-center">16-Pt 24VDC</div>
-
-                  {/* 16-channel LED indicator block (Octal 0..7, 10..17) */}
-                  <div className="grid grid-cols-4 gap-0.5 p-1 bg-slate-950 rounded border border-slate-750">
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((ch) => {
-                      const isActive = getDiActive(ch);
-                      return (
-                        <div
-                          key={ch}
-                          className={`h-3 rounded-xs flex items-center justify-center text-[6px] font-mono font-bold transition-all ${
-                            isActive
-                              ? 'bg-amber-400 text-black shadow-[0_0_4px_rgba(251,191,36,0.9)]'
-                              : 'bg-slate-800 text-slate-500'
-                          }`}
-                        >
-                          {ch.toString(16).toUpperCase()}
-                        </div>
-                      );
-                    })}
+                {/* CPU Top Header */}
+                <div className="p-1.5 border-b border-slate-700">
+                  <div className="text-[9px] font-black font-mono text-white tracking-tight">
+                    R08CPU
                   </div>
                 </div>
 
-                {/* Screw Terminal Blocks */}
-                <div className="p-1.5 bg-slate-900 border-t border-slate-750 flex-1 flex flex-col justify-around text-[6px] font-mono text-slate-400">
-                  <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                    <span>TB1: X0-X7</span>
-                    <span className="text-emerald-400 font-bold">LIVE</span>
+                {/* 4 Status LEDs: RUN (green), ERR (red), P.RUN (green), BAT (green) */}
+                <div className="px-2 py-1 space-y-1 text-[7px] font-mono text-slate-300">
+                  <div className="flex items-center justify-between">
+                    <span>RUN</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,1)]" />
                   </div>
-                  <div className="flex justify-between">
-                    <span>TB2: X8-XF</span>
-                    <span className="text-slate-500">READY</span>
+                  <div className="flex items-center justify-between">
+                    <span>ERR</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-600" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>P.RUN</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>BAT</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                   </div>
                 </div>
 
-                <div className="h-5 bg-slate-950 border-t border-slate-750 flex items-center justify-center text-[6.5px] font-mono text-slate-400">
-                  18-PIN TERMINAL
+                {/* Gigabit Ethernet RJ45 Port */}
+                <div className="px-2 py-2 border-t border-slate-700/80 bg-slate-900/60 flex flex-col items-center gap-1">
+                  <span className="text-[6.5px] font-mono text-slate-400">100BASE-TX / SD/RD</span>
+                  <div className="w-10 h-8 bg-slate-950 border border-slate-600 rounded flex flex-col justify-between p-0.5 shadow-inner">
+                    <div className="flex justify-between">
+                      <span className="w-1 h-1 rounded-full bg-emerald-400 animate-ping" />
+                      <span className="w-1 h-1 rounded-full bg-amber-400" />
+                    </div>
+                    <div className="w-6 h-3 mx-auto bg-slate-800 rounded-xs border border-slate-700" />
+                  </div>
+                </div>
+
+                {/* SD Card / USB Door */}
+                <div className="h-10 bg-slate-900 border-t border-slate-700 flex items-center justify-center text-[7px] font-mono text-slate-400">
+                  ▼ SD CARD
+                </div>
+
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  R08CPU
                 </div>
               </div>
 
-              {/* SLOT 2 - Digital Output Module (RY40NT5P) */}
+              {/* ========================================================
+                  SLOT 2: RX40C7 DIGITAL INPUT MODULE (Screw Terminals)
+                  ======================================================== */}
               <div
                 onClick={() => onSelectSlot(2)}
-                className={`w-28 rounded-lg cursor-pointer transition-all duration-200 border-2 flex flex-col justify-between overflow-hidden relative ${
+                className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 2
-                    ? 'border-indigo-400 ring-2 ring-indigo-400/40 shadow-lg shadow-indigo-400/20 scale-102 z-10'
-                    : 'border-slate-700 hover:border-slate-500 bg-slate-850'
+                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    : 'border-slate-800 hover:border-slate-600'
                 }`}
+                style={{
+                  background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
               >
-                <div className="bg-slate-800 px-2 py-1 flex items-center justify-between border-b border-slate-700">
-                  <span className="text-[10px] font-mono font-bold text-indigo-400">Slot 2 (DO)</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  2
                 </div>
 
-                <div className="p-1.5 space-y-1 bg-slate-800/80">
-                  <div className="text-[8.5px] font-mono font-bold text-slate-100 text-center">RY40NT5P</div>
-                  <div className="text-[7px] font-mono text-indigo-400 text-center">16-Pt Transistor</div>
+                <div className="p-1.5 border-b border-slate-700 text-center">
+                  <div className="text-[9px] font-black font-mono text-white">RX40C7</div>
+                  <div className="text-[6.5px] font-mono text-emerald-400">16-Pt 24VDC</div>
+                </div>
 
-                  {/* 16-channel LED indicator block */}
-                  <div className="grid grid-cols-4 gap-0.5 p-1 bg-slate-950 rounded border border-slate-750">
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((ch) => {
-                      const isActive = getDoActive(ch);
-                      return (
-                        <div
-                          key={ch}
-                          className={`h-3 rounded-xs flex items-center justify-center text-[6px] font-mono font-bold transition-all ${
-                            isActive
-                              ? 'bg-rose-500 text-white shadow-[0_0_4px_rgba(244,63,94,0.9)]'
-                              : 'bg-slate-800 text-slate-500'
-                          }`}
-                        >
-                          {ch.toString(16).toUpperCase()}
+                {/* Full-Length Screw Terminal Block matching Reference Image 2 */}
+                <div className="flex-1 px-1.5 py-1 flex flex-col justify-between bg-slate-950/70 border-x border-slate-700/60 my-1">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((rowIdx) => {
+                    const isLeftActive = getDiActive(rowIdx);
+                    const isRightActive = getDiActive(rowIdx + 8);
+
+                    return (
+                      <div key={rowIdx} className="flex items-center justify-between text-[6px] font-mono text-slate-400">
+                        {/* Left Screw Terminal */}
+                        <div className="flex items-center gap-0.5">
+                          <div className={`w-2.5 h-2.5 rounded-full border border-slate-500 flex items-center justify-center shadow-inner ${isLeftActive ? 'bg-amber-400 text-black' : 'bg-slate-700 text-slate-300'}`}>
+                            +
+                          </div>
+                          <span>{rowIdx}</span>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Right Screw Terminal */}
+                        <div className="flex items-center gap-0.5">
+                          <span>{rowIdx + 8}</span>
+                          <div className={`w-2.5 h-2.5 rounded-full border border-slate-500 flex items-center justify-center shadow-inner ${isRightActive ? 'bg-amber-400 text-black' : 'bg-slate-700 text-slate-300'}`}>
+                            +
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Screw Terminal Blocks */}
-                <div className="p-1.5 bg-slate-900 border-t border-slate-750 flex-1 flex flex-col justify-around text-[6px] font-mono text-slate-400">
-                  <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                    <span>TB1: Y0-Y7</span>
-                    <span className="text-indigo-400 font-bold">SINK</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>TB2: Y8-YF</span>
-                    <span className="text-slate-500">READY</span>
-                  </div>
+                <div className="h-5 bg-slate-900 border-t border-slate-700 flex items-center justify-center text-[6px] font-mono text-slate-400">
+                  18-POINT BLOCK
                 </div>
 
-                <div className="h-5 bg-slate-950 border-t border-slate-750 flex items-center justify-center text-[6.5px] font-mono text-slate-400">
-                  0.5A / POINT
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  RX40C7
                 </div>
               </div>
 
-              {/* SLOT 3 - Analog Input Module (R60AD8) */}
+              {/* ========================================================
+                  SLOT 3: RY40NT5P DIGITAL OUTPUT MODULE (Screw Terminals)
+                  ======================================================== */}
               <div
                 onClick={() => onSelectSlot(3)}
-                className={`w-28 rounded-lg cursor-pointer transition-all duration-200 border-2 flex flex-col justify-between overflow-hidden relative ${
+                className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 3
-                    ? 'border-blue-400 ring-2 ring-blue-400/40 shadow-lg shadow-blue-400/20 scale-102 z-10'
-                    : 'border-slate-700 hover:border-slate-500 bg-slate-850'
+                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    : 'border-slate-800 hover:border-slate-600'
                 }`}
+                style={{
+                  background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
               >
-                <div className="bg-slate-800 px-2 py-1 flex items-center justify-between border-b border-slate-700">
-                  <span className="text-[10px] font-mono font-bold text-blue-400">Slot 3 (AI)</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  3
                 </div>
 
-                <div className="p-1.5 space-y-1 bg-slate-800/80">
-                  <div className="text-[8.5px] font-mono font-bold text-slate-100 text-center">R60AD8</div>
-                  <div className="text-[7px] font-mono text-blue-400 text-center">8-Ch 4-20mA</div>
+                <div className="p-1.5 border-b border-slate-700 text-center">
+                  <div className="text-[9px] font-black font-mono text-white">RY40NT5P</div>
+                  <div className="text-[6.5px] font-mono text-indigo-400">16-Pt SINK</div>
+                </div>
 
-                  {/* Channel Active Status */}
-                  <div className="grid grid-cols-4 gap-0.5 p-1 bg-slate-950 rounded border border-slate-750">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((ch) => (
-                      <div
-                        key={ch}
-                        className={`h-3 rounded-xs flex items-center justify-center text-[6px] font-mono font-bold ${
-                          ch <= 5 ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        CH{ch}
+                {/* Full-Length Screw Terminal Block */}
+                <div className="flex-1 px-1.5 py-1 flex flex-col justify-between bg-slate-950/70 border-x border-slate-700/60 my-1">
+                  {[0, 1, 2, 3, 4, 5, 6, 7].map((rowIdx) => {
+                    const isLeftActive = getDoActive(rowIdx);
+                    const isRightActive = getDoActive(rowIdx + 8);
+
+                    return (
+                      <div key={rowIdx} className="flex items-center justify-between text-[6px] font-mono text-slate-400">
+                        <div className="flex items-center gap-0.5">
+                          <div className={`w-2.5 h-2.5 rounded-full border border-slate-500 flex items-center justify-center shadow-inner ${isLeftActive ? 'bg-rose-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
+                            +
+                          </div>
+                          <span>Y{rowIdx}</span>
+                        </div>
+
+                        <div className="flex items-center gap-0.5">
+                          <span>Y{rowIdx + 8}</span>
+                          <div className={`w-2.5 h-2.5 rounded-full border border-slate-500 flex items-center justify-center shadow-inner ${isRightActive ? 'bg-rose-500 text-white' : 'bg-slate-700 text-slate-300'}`}>
+                            +
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
 
-                <div className="p-1.5 bg-slate-900 border-t border-slate-750 flex-1 flex flex-col justify-around text-[6px] font-mono text-slate-400">
-                  <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                    <span>5 µs / CH</span>
-                    <span className="text-cyan-400 font-bold">16-BIT</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>D100 - D107</span>
-                    <span className="text-slate-300">CALIB OK</span>
-                  </div>
+                <div className="h-5 bg-slate-900 border-t border-slate-700 flex items-center justify-center text-[6px] font-mono text-slate-400">
+                  0.5A / POINT
                 </div>
 
-                <div className="h-5 bg-slate-950 border-t border-slate-750 flex items-center justify-center text-[6.5px] font-mono text-slate-400">
-                  DIFFERENTIAL
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  RY40NT5P
                 </div>
               </div>
 
-              {/* SLOT 4 - Analog Output Module (R60DA8) */}
+              {/* ========================================================
+                  SLOT 4: R60AD8 ANALOG INPUT MODULE (Selected in Ref Image 2)
+                  ======================================================== */}
               <div
                 onClick={() => onSelectSlot(4)}
-                className={`w-28 rounded-lg cursor-pointer transition-all duration-200 border-2 flex flex-col justify-between overflow-hidden relative ${
+                className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
                   selectedSlot === 4
-                    ? 'border-purple-400 ring-2 ring-purple-400/40 shadow-lg shadow-purple-400/20 scale-102 z-10'
-                    : 'border-slate-700 hover:border-slate-500 bg-slate-850'
+                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    : 'border-slate-800 hover:border-slate-600'
                 }`}
+                style={{
+                  background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
               >
-                <div className="bg-slate-800 px-2 py-1 flex items-center justify-between border-b border-slate-700">
-                  <span className="text-[10px] font-mono font-bold text-purple-400">Slot 4 (AO)</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  4
                 </div>
 
-                <div className="p-1.5 space-y-1 bg-slate-800/80">
-                  <div className="text-[8.5px] font-mono font-bold text-slate-100 text-center">R60DA8</div>
-                  <div className="text-[7px] font-mono text-purple-400 text-center">8-Ch 4-20mA/10V</div>
+                <div className="p-1.5 border-b border-slate-700 text-center">
+                  <div className="text-[9px] font-black font-mono text-white">R60AD8</div>
+                  <div className="text-[6.5px] font-mono text-cyan-400">8-Ch 4-20mA</div>
+                </div>
 
-                  {/* Channel Active Status */}
-                  <div className="grid grid-cols-4 gap-0.5 p-1 bg-slate-950 rounded border border-slate-750">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((ch) => (
-                      <div
-                        key={ch}
-                        className={`h-3 rounded-xs flex items-center justify-center text-[6px] font-mono font-bold ${
-                          ch <= 2 ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-500'
-                        }`}
-                      >
-                        CH{ch}
+                {/* Analog Differential Screw Terminal Block */}
+                <div className="flex-1 px-1.5 py-1 flex flex-col justify-between bg-slate-950/70 border-x border-slate-700/60 my-1">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((ch) => (
+                    <div key={ch} className="flex items-center justify-between text-[6.5px] font-mono text-slate-300">
+                      <span className="text-slate-400">CH{ch}</span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2.5 h-2.5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[5.5px] text-cyan-400">
+                          +
+                        </div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[5.5px] text-slate-400">
+                          -
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
 
-                <div className="p-1.5 bg-slate-900 border-t border-slate-750 flex-1 flex flex-col justify-around text-[6px] font-mono text-slate-400">
-                  <div className="flex justify-between border-b border-slate-800 pb-0.5">
-                    <span>10 µs / CH</span>
-                    <span className="text-purple-400 font-bold">16-BIT</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>D200 - D207</span>
-                    <span className="text-slate-300">VFD / FCV</span>
-                  </div>
+                <div className="h-5 bg-slate-900 border-t border-slate-700 flex items-center justify-center text-[6px] font-mono text-cyan-400 font-bold">
+                  5 µs / CH • 16-BIT
                 </div>
 
-                <div className="h-5 bg-slate-950 border-t border-slate-750 flex items-center justify-center text-[6.5px] font-mono text-slate-400">
-                  MODULATING
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  R60AD8
                 </div>
               </div>
 
-              {/* SLOTS 5, 6, 7 - Empty / Expansion Slots with RG60 Dummy Cover Plate */}
-              {[5, 6, 7].map((slotIdx) => (
+              {/* ========================================================
+                  SLOT 5: R60DA8 ANALOG OUTPUT MODULE
+                  ======================================================== */}
+              <div
+                onClick={() => onSelectSlot(5)}
+                className={`w-24 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-xl relative ${
+                  selectedSlot === 5
+                    ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                    : 'border-slate-800 hover:border-slate-600'
+                }`}
+                style={{
+                  background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                }}
+              >
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                  5
+                </div>
+
+                <div className="p-1.5 border-b border-slate-700 text-center">
+                  <div className="text-[9px] font-black font-mono text-white">R60DA8</div>
+                  <div className="text-[6.5px] font-mono text-purple-400">8-Ch 0-10V/mA</div>
+                </div>
+
+                {/* Analog Output Terminal Block */}
+                <div className="flex-1 px-1.5 py-1 flex flex-col justify-between bg-slate-950/70 border-x border-slate-700/60 my-1">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((ch) => (
+                    <div key={ch} className="flex items-center justify-between text-[6.5px] font-mono text-slate-300">
+                      <span className="text-slate-400">V/I{ch}</span>
+                      <div className="w-2.5 h-2.5 rounded-full bg-slate-700 border border-slate-500 flex items-center justify-center text-[5.5px] text-purple-400">
+                        +
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="h-5 bg-slate-900 border-t border-slate-700 flex items-center justify-center text-[6px] font-mono text-purple-400 font-bold">
+                  10 µs / CH • DAC
+                </div>
+
+                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  R60DA8
+                </div>
+              </div>
+
+              {/* ========================================================
+                  SLOT 6 & 7: EMPTY BLANK COVER PLATES (RG60)
+                  ======================================================== */}
+              {[6, 7].map((slotIdx) => (
                 <div
                   key={slotIdx}
                   onClick={() => onSelectSlot(slotIdx)}
-                  className={`w-20 rounded-lg cursor-pointer transition-all duration-200 border border-dashed flex flex-col justify-between overflow-hidden relative ${
+                  className={`w-20 h-84 rounded-t-sm rounded-b-xs cursor-pointer transition-all duration-150 border-2 flex flex-col justify-between overflow-hidden shadow-md relative ${
                     selectedSlot === slotIdx
-                      ? 'border-cyan-400 bg-cyan-950/20'
-                      : 'border-slate-800 hover:border-slate-600 bg-slate-950/60'
+                      ? 'border-blue-500 ring-4 ring-blue-500/30 z-20 scale-[1.02]'
+                      : 'border-slate-800 hover:border-slate-600'
                   }`}
+                  style={{
+                    background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                  }}
                 >
-                  <div className="bg-slate-900/80 px-1.5 py-0.5 flex items-center justify-between border-b border-slate-800 text-[9px] font-mono text-slate-500">
-                    <span>Slot {slotIdx}</span>
+                  <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                    {slotIdx}
                   </div>
 
-                  <div className="p-2 text-center my-auto flex flex-col items-center justify-center gap-1 opacity-50 hover:opacity-100 transition">
-                    <div className="w-5 h-5 rounded-full border border-slate-700 flex items-center justify-center text-slate-400 text-xs">
-                      +
-                    </div>
-                    <span className="text-[7.5px] font-mono text-slate-400">EMPTY / RG60</span>
+                  <div className="p-1.5 border-b border-slate-800 text-center">
+                    <div className="text-[8px] font-mono text-slate-500">RG60</div>
                   </div>
 
-                  <div className="h-4 bg-slate-950 border-t border-slate-800 flex items-center justify-center text-[6px] font-mono text-slate-600">
-                    EXPANSION
+                  {/* Vertical Cooling Vent Ribs on Blank Plate */}
+                  <div className="flex-1 px-3 py-6 flex flex-col justify-around items-center opacity-40">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((rib) => (
+                      <div key={rib} className="w-full h-1 bg-slate-700 rounded-full" />
+                    ))}
+                  </div>
+
+                  <div className="h-5 bg-slate-950 border-t border-slate-800 flex items-center justify-center text-[6px] font-mono text-slate-500">
+                    BLANK
+                  </div>
+
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                    —
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Selected Module Properties Quick-Banner */}
-      <div className="bg-slate-850 px-4 py-2 border-t border-slate-750 flex flex-wrap items-center justify-between text-xs text-slate-300 gap-2">
-        <div className="flex items-center gap-2">
-          <Info className="w-4 h-4 text-cyan-400" />
-          <span className="font-semibold text-slate-100">
-            {selectedSlot === 'POW'
-              ? 'Slot POW: AC Power Supply R61P (100-240V AC / 5V DC 6.5A)'
-              : selectedSlot === 0
-              ? 'Slot 0 (CPU): Mitsubishi Electric R08CPU (80K Steps, SLMP 3E Native)'
-              : selectedSlot === 1
-              ? 'Slot 1 (DI): RX40C7 (16 Channels 24VDC, Addressing X0 - XF)'
-              : selectedSlot === 2
-              ? 'Slot 2 (DO): RY40NT5P (16 Channels Sink Transistor, Addressing Y0 - YF)'
-              : selectedSlot === 3
-              ? 'Slot 3 (AI): R60AD8 (8 Channels 4-20mA, Buffer D100 - D107)'
-              : selectedSlot === 4
-              ? 'Slot 4 (AO): R60DA8 (8 Channels Modulating 4-20mA/0-10V, Buffer D200 - D207)'
-              : `Slot ${selectedSlot}: Empty / Available for expansion`}
-          </span>
-        </div>
-
-        <div className="text-[11px] font-mono text-slate-400">
-          Click any module to inspect pinout or map hardware channels
+          {/* Right Aluminum Mounting Flange with Bolt Hole */}
+          <div className="w-8 h-80 bg-gradient-to-r from-slate-400 via-slate-300 to-slate-400 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 rounded-r border border-slate-400 dark:border-slate-600 flex flex-col justify-around items-center shadow-md shrink-0">
+            <div className="w-4 h-4 rounded-full bg-slate-500 dark:bg-slate-900 border border-slate-400 shadow-inner flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-700" />
+            </div>
+            <div className="w-1.5 h-24 bg-slate-500/30 rounded-full" />
+            <div className="w-4 h-4 rounded-full bg-slate-500 dark:bg-slate-900 border border-slate-400 shadow-inner flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-700" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
