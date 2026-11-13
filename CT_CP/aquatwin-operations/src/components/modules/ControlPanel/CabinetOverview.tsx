@@ -5,6 +5,9 @@
 
 import React, { useState } from 'react';
 import { PANEL_CALLOUTS_25 } from './panelData';
+import CabinetImg from './assets/cabinet.jpg';
+import { InfoPanel } from './InfoPanel';
+import { MonitoringDashboard } from './MonitoringDashboard';
 import { PanelComponent } from '../../../types/io';
 import { SimulatedBadge } from '../../shared/SimulatedBadge';
 import {
@@ -39,38 +42,29 @@ export const CabinetOverview: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-5 h-full">
       {/* Main Cabinet Visualizer Canvas */}
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col shadow-sm">
+      <div className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col shadow-2xl">
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
+            <span className="font-semibold text-slate-200">
               Cabinet Enclosure Model:
             </span>
-            <span className="font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+            <span className="font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
               Siemens Industrial S7 Standard Enclosure (IP55 / NEMA 12)
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             {/* Door Toggle */}
-            <div className="inline-flex rounded-lg border border-slate-200 dark:border-slate-700 p-0.5 bg-slate-100 dark:bg-slate-800 text-[11px]">
+            <div className="inline-flex rounded-lg border border-slate-700 p-0.5 bg-slate-800 text-[11px]">
               <button
                 onClick={() => setDoorOpen(false)}
-                className={`px-2.5 py-1 rounded font-medium transition ${
-                  !doorOpen
-                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
-              >
+                className={`px-2.5 py-1 rounded font-medium transition ${!doorOpen ? 'bg-slate-900 text-cyan-400 shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}              >
                 Front Door (Closed)
               </button>
               <button
                 onClick={() => setDoorOpen(true)}
-                className={`px-2.5 py-1 rounded font-medium transition ${
-                  doorOpen
-                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                }`}
+                className={`px-2.5 py-1 rounded font-medium transition ${doorOpen ? 'bg-slate-900 text-cyan-400 shadow-xs' : 'text-slate-400 hover:text-slate-200'}`}
               >
                 Internal Chassis (Open)
               </button>
@@ -80,8 +74,8 @@ export const CabinetOverview: React.FC = () => {
               onClick={() => setShowCalloutBadges(!showCalloutBadges)}
               className={`px-2.5 py-1 text-[11px] rounded border transition flex items-center gap-1 ${
                 showCalloutBadges
-                  ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-700 dark:text-cyan-300'
-                  : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                  ? 'bg-cyan-950 border-cyan-800 text-cyan-300'
+                  : 'bg-slate-800 border-slate-700 text-slate-400'
               }`}
             >
               <Eye className="w-3 h-3" />
@@ -91,15 +85,29 @@ export const CabinetOverview: React.FC = () => {
         </div>
 
         {/* Physical Cabinet Layout Representation */}
-        <div className="flex-1 min-h-[560px] relative mt-4 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 p-4 overflow-y-auto">
+        <div className="flex-1 min-h-[560px] relative mt-4 rounded-xl border border-slate-800 bg-slate-900 p-4 overflow-y-auto">
           {!doorOpen ? (
             /* FRONT DOOR VIEW (Matching Image 1 Left) */
-            <div className="max-w-[520px] mx-auto h-[530px] bg-gradient-to-b from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900 rounded-lg border-4 border-slate-400 dark:border-slate-700 shadow-xl relative flex flex-col justify-between p-6">
+            <div className="max-w-[520px] mx-auto h-[530px] rounded-lg border-4 border-slate-400 dark:border-slate-700 shadow-xl relative flex flex-col justify-between p-6">
+              {/* Cabinet Image */}
+              <img src={CabinetImg} alt="AquaTwin Control Panel" className="absolute inset-0 w-full h-full object-cover rounded-lg" />
+              {/* Clickable Callout Overlays */}
+              {showCalloutBadges && filteredComponents.map((c) => (
+                <div
+                  key={c.id}
+                  className="absolute cursor-pointer hover:border-2 hover:border-cyan-500"
+                  style={{
+                    left: `${c.position.x}%`,
+                    top: `${c.position.y}%`,
+                    width: `${c.position.w}%`,
+                    height: `${c.position.h}%`,
+                  }}
+                  onClick={() => setSelectedCallout(c)}
+                />
+              ))}
               {/* Siemens Logo Header */}
               <div className="flex items-center justify-between border-b border-slate-400/40 pb-3">
-                <span className="font-black text-cyan-700 dark:text-cyan-400 tracking-widest text-lg font-sans">
-                  SIEMENS
-                </span>
+                <span className="font-black text-cyan-700 dark:text-cyan-400 tracking-widest text-lg font-sans">AquaTwin</span>
                 <span className="text-[10px] text-slate-500 font-mono">ENCLOSURE REV 2.4</span>
               </div>
 
@@ -574,16 +582,6 @@ export const CabinetOverview: React.FC = () => {
                         4
                       </span>
                     )}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-black text-cyan-400 font-mono">
-                        SINAMICS VFD
-                      </span>
-                      <span className="text-[7px] text-slate-400 font-mono">P-202 DRIVE</span>
-                    </div>
-                    <div className="bg-slate-950 p-1 rounded border border-slate-700 flex items-center justify-around font-mono">
-                      <span className="text-[12px] font-bold text-emerald-400">48.5 Hz</span>
-                      <span className="text-[9px] text-cyan-300">1455 RPM</span>
-                    </div>
                     <div className="text-[7px] text-slate-400 font-mono text-center">
                       CU240E-2 PN Vector
                     </div>
@@ -744,6 +742,11 @@ export const CabinetOverview: React.FC = () => {
           </div>
         )}
 
+        {/* Monitoring Dashboard */}
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mb-4">
+          <MonitoringDashboard />
+        </div>
+
         {/* 25 Callouts Quick Selector */}
         <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
           <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
@@ -769,4 +772,3 @@ export const CabinetOverview: React.FC = () => {
     </div>
   );
 };
-

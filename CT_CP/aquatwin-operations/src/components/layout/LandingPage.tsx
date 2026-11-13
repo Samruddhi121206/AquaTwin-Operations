@@ -5,267 +5,178 @@
 
 import React from 'react';
 import { usePlant } from '../../context/PlantContext';
-import { useRuntimeMode } from '../../context/RuntimeModeContext';
-import { ModuleType } from '../../types/plant';
-import { ModeBanner } from '../shared/ModeBanner';
-import { SimulatedBadge } from '../shared/SimulatedBadge';
 import {
   Workflow,
   Cpu,
-  SlidersHorizontal,
+  Layers,
   BarChart3,
   ArrowRight,
-  ShieldCheck,
-  Activity,
-  Droplets,
-  Layers,
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-  Server,
-  Settings,
+  Check,
 } from 'lucide-react';
 
-interface ModuleCard {
-  id: ModuleType;
-  number: string;
-  title: string;
-  badge: string;
-  badgeColor: string;
-  tagline: string;
-  icon: React.ElementType;
-  accentBorder: string;
-  accentBg: string;
-  features: string[];
-  metrics: { label: string; value: string }[];
-}
-
 export const LandingPage: React.FC = () => {
-  const { setActiveModule, telemetry, alarms } = usePlant();
-  const { plcHealth } = useRuntimeMode();
+  const { setActiveModule } = usePlant();
 
-  const unackAlarmsCount = alarms.filter((a) => !a.acknowledged).length;
-
-  const modules: ModuleCard[] = [
+  const cards = [
     {
-      id: 'plant',
+      id: 'plant' as const,
       number: '01',
       title: 'Plant',
-      badge: 'Operational Mimic',
-      badgeColor: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20',
-      tagline: 'Live plant operations, dynamic tank simulation & P&ID mimic',
       icon: Workflow,
-      accentBorder: 'hover:border-cyan-500/60 dark:hover:border-cyan-500/50',
-      accentBg: 'from-cyan-500/5 to-transparent',
-      features: [
-        'Live Process: Dynamic Equalization & Permeate Tanks',
-        'Pumps & Valves: VFD speed, discharge pressure & trip status',
-        'Sensors & Interlocks: Level, flow, differential pressures',
-        'Equipment & Maintenance: Integrated asset registry & work orders',
+      tagline: 'Water treatment operations & dynamic tank simulation.',
+      items: [
+        'Tank level monitoring for raw equalization & treated permeate tanks',
+        'Pump operating states, VFD speed tracking & trip status monitoring',
+        'Valve open/close feedback and feed flow rate monitoring',
+        'Live process operations mimic with dynamic simulated physics',
       ],
-      metrics: [
-        { label: 'TK-101 Level', value: `${telemetry.tk101.currentLevelPercent.toFixed(1)}%` },
-        { label: 'Feed Flow', value: `${telemetry.p101_flowM3h.toFixed(1)} m³/h` },
-        { label: 'Active Alarms', value: `${unackAlarmsCount}` },
-      ],
+      border: 'border-cyan-500/30 dark:border-cyan-500/40 hover:border-cyan-400',
+      glow: 'hover:shadow-[0_0_20px_rgba(6,182,212,0.22)]',
+      btnBg: 'bg-cyan-500/10 hover:bg-cyan-500 text-cyan-700 dark:text-cyan-300 hover:text-slate-950 border-cyan-500/30',
+      accent: 'text-cyan-600 dark:text-cyan-400',
+      badgeBg: 'bg-cyan-500/10 dark:bg-cyan-500/20 border-cyan-500/20 text-cyan-600 dark:text-cyan-300',
+      bgGradient: 'dark:from-[#0b1736] dark:via-[#091530] dark:to-[#050e24]',
     },
     {
-      id: 'io',
+      id: 'io' as const,
       number: '02',
       title: 'Input / Output',
-      badge: 'Dedicated PLC Driver',
-      badgeColor: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/20',
-      tagline: 'Dedicated PLC inputs/outputs, tag addressing & bus communications',
       icon: Cpu,
-      accentBorder: 'hover:border-indigo-500/60 dark:hover:border-indigo-500/50',
-      accentBg: 'from-indigo-500/5 to-transparent',
-      features: [
-        'PLC Overview: S7-1500 connection, CPU state & protocol health',
-        'Digital Inputs (DI): Pump run/trip feedbacks & limit switches',
-        'Analog Inputs (AI): 4-20mA sensor counts (0-27648) & scaling',
-        'Digital & Analog Outputs (DO/AO): Run commands & setpoints',
+      tagline: 'PLC bus communications & channel signal processing.',
+      items: [
+        'Dedicated PLC input and output channel monitoring',
+        'Digital inputs (DI) and analog sensor signals (AI)',
+        'Controller health and PROFINET communication status',
+        'Active I/O channel mapping, addressing and signal validation',
       ],
-      metrics: [
-        { label: 'Scan Cycle', value: `${plcHealth.latencyMs} ms` },
-        { label: 'Hardware Mode', value: plcHealth.mode },
-        { label: 'I/O Channels', value: '16 Active' },
-      ],
+      border: 'border-indigo-400/30 dark:border-indigo-400/40 hover:border-cyan-400',
+      glow: 'hover:shadow-[0_0_20px_rgba(99,102,241,0.22)]',
+      btnBg: 'bg-indigo-500/10 hover:bg-indigo-500 text-indigo-700 dark:text-indigo-300 hover:text-white border-indigo-500/30',
+      accent: 'text-indigo-600 dark:text-indigo-400',
+      badgeBg: 'bg-indigo-500/10 dark:bg-indigo-500/20 border-indigo-500/20 text-indigo-600 dark:text-indigo-300',
+      bgGradient: 'dark:from-[#0c1840] dark:via-[#0a1538] dark:to-[#050e24]',
     },
     {
-      id: 'control_panel',
+      id: 'control_panel' as const,
       number: '03',
       title: 'Control Panel',
-      badge: 'Cabinet & Wiring',
-      badgeColor: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-      tagline: 'Electrical panel layout, 25 callouts & interactive wiring paths',
       icon: Layers,
-      accentBorder: 'hover:border-amber-500/60 dark:hover:border-amber-500/50',
-      accentBg: 'from-amber-500/5 to-transparent',
-      features: [
-        'Cabinet Overview: Front door HMI/lamps & internal chassis',
-        'DIN Rail Zones Z1-Z5: Breakers, SIRIUS contactors & PILZ relays',
-        'Signal-Path Tracing: Click any sensor or tag to trace wiring',
-        'Component Inspector: 25 numbered callouts with manufacturer specs',
+      tagline: 'Siemens industrial electrical enclosure & chassis wiring.',
+      items: [
+        'Electrical cabinet overview and physical layout representation',
+        'Siemens S7 PLC modules, power supplies and electrical components',
+        'DIN rail protection breakers, SIRIUS contactors and safety relays',
+        'Component inspection with interactive signal-path tracing',
       ],
-      metrics: [
-        { label: 'Chassis Type', value: 'IP55 / TS 8' },
-        { label: 'Callouts', value: '25 Items' },
-        { label: 'DC Bus', value: '24V / 20A' },
-      ],
+      border: 'border-sky-400/30 dark:border-sky-400/40 hover:border-cyan-400',
+      glow: 'hover:shadow-[0_0_20px_rgba(56,189,248,0.22)]',
+      btnBg: 'bg-sky-500/10 hover:bg-sky-500 text-sky-700 dark:text-sky-300 hover:text-slate-950 border-sky-500/30',
+      accent: 'text-sky-600 dark:text-sky-400',
+      badgeBg: 'bg-sky-500/10 dark:bg-sky-500/20 border-sky-500/20 text-sky-600 dark:text-sky-300',
+      bgGradient: 'dark:from-[#091a38] dark:via-[#071530] dark:to-[#040e21]',
     },
     {
-      id: 'analysis',
+      id: 'analysis' as const,
       number: '04',
       title: 'Analysis',
-      badge: 'Trends & Reports',
-      badgeColor: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
-      tagline: 'Process trends, water quality, energy efficiency & compliance reports',
       icon: BarChart3,
-      accentBorder: 'hover:border-emerald-500/60 dark:hover:border-emerald-500/50',
-      accentBg: 'from-emerald-500/5 to-transparent',
-      features: [
-        'Process Trends: Multi-variable real-time & historical Recharts plots',
-        'Water Quality: TDS, pH, conductivity, turbidity & SDI tracking',
-        'Energy Performance: Specific consumption (kWh/m³) & pump load',
-        'Reports & Compliance: Daily, weekly & monthly export generator',
+      tagline: 'Multi-variable trends, water quality & compliance reports.',
+      items: [
+        'Plant performance trends and multi-variable operational telemetry',
+        'Water quality chemistry including TDS, pH and conductivity',
+        'Specific energy consumption (kWh/m³) and pump power efficiency',
+        'Operational compliance summaries and automated export reports',
       ],
-      metrics: [
-        { label: 'Salt Rejection', value: `${telemetry.ro_saltRejectionPercent.toFixed(1)}%` },
-        { label: 'RO Recovery', value: `${telemetry.ro_recoveryPercent.toFixed(1)}%` },
-        { label: 'Energy Rate', value: '1.82 kWh/m³' },
-      ],
+      border: 'border-teal-400/30 dark:border-teal-400/40 hover:border-cyan-400',
+      glow: 'hover:shadow-[0_0_20px_rgba(45,212,191,0.22)]',
+      btnBg: 'bg-teal-500/10 hover:bg-teal-500 text-teal-700 dark:text-teal-300 hover:text-slate-950 border-teal-500/30',
+      accent: 'text-teal-600 dark:text-teal-400',
+      badgeBg: 'bg-teal-500/10 dark:bg-teal-500/20 border-teal-500/20 text-teal-600 dark:text-teal-300',
+      bgGradient: 'dark:from-[#081a33] dark:via-[#061429] dark:to-[#030d1c]',
     },
   ];
 
   return (
-    <div className="space-y-6 max-w-[1500px] mx-auto py-2">
-      {/* Top Runtime Mode Banner */}
-      <ModeBanner />
-
-      {/* Platform Title Banner */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-cyan-500/10 via-indigo-500/5 to-transparent pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold tracking-widest text-cyan-600 dark:text-cyan-400 uppercase">
-                AquaTwin Operations
-              </span>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <SimulatedBadge verified={false} text="VIRTUAL PLC CORE" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight mt-1">
-              Industrial Water Operations Platform
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-              High-purity Reverse Osmosis water treatment monitoring, digital twin simulation,
-              dedicated Siemens S7 PLC input/output management, and electrical cabinet visualization.
-            </p>
+    <div className="max-w-[1480px] mx-auto py-1 px-1 sm:px-2 space-y-4">
+      {/* Dashboard Heading — Redesigned with Sky / Light Blue Theme */}
+      <div className="flex items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-sky-50 via-blue-50/80 to-cyan-50 border border-sky-200/90 shadow-sm shadow-sky-100/50">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.9)] animate-pulse" />
+            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-blue-700">
+              INDUSTRIAL DIGITAL TWIN PLATFORM
+            </span>
           </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#0a1b44] leading-tight">
+            System Performance Summary
+          </h1>
+          <p className="text-xs text-[#1e3a66] font-medium mt-0.5">
+            Industrial Digital Twin Performance Dashboard
+          </p>
+        </div>
 
-          <div className="flex items-center gap-4 text-xs bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700/60 font-mono">
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase">Plant Status</div>
-              <div className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>ONLINE · AUTO</span>
-              </div>
-            </div>
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase">Production</div>
-              <div className="font-bold text-slate-900 dark:text-slate-100 mt-0.5">
-                {telemetry.ro_permeateFlowM3h.toFixed(1)} m³/h
-              </div>
-            </div>
-            <div className="w-px h-8 bg-slate-200 dark:bg-slate-700" />
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase">Alerts</div>
-              <div
-                className={`font-bold mt-0.5 ${
-                  unackAlarmsCount > 0 ? 'text-amber-500' : 'text-slate-500'
-                }`}
-              >
-                {unackAlarmsCount} Active
-              </div>
-            </div>
-          </div>
+        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[#0a1b44] bg-white/90 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-sky-200 shadow-xs font-bold">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+          <span>4 Connected Modules</span>
         </div>
       </div>
 
-      {/* The 4 Large Main Module Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {modules.map((mod) => {
-          const Icon = mod.icon;
+      {/* 2 × 2 Grid Layout with Compact Heights & All-Text Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {cards.map((c) => {
+          const Icon = c.icon;
           return (
             <div
-              key={mod.id}
-              onClick={() => setActiveModule(mod.id)}
-              className={`group cursor-pointer bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl p-6 transition-all duration-300 shadow-sm hover:shadow-xl relative flex flex-col justify-between bg-gradient-to-br ${mod.accentBg} ${mod.accentBorder}`}
+              key={c.id}
+              className={`rounded-xl bg-white dark:bg-gradient-to-br ${c.bgGradient} border ${c.border} ${c.glow} p-4 sm:p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 flex flex-col justify-between group`}
             >
               <div>
-                {/* Header Row */}
-                <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-800 dark:text-slate-200 group-hover:scale-110 transition-transform">
-                      <Icon className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                {/* Card Title & Icon */}
+                <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-[#162544]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                      <Icon className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-slate-400">
-                          {mod.number}
+                        <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border ${c.badgeBg}`}>
+                          {c.number}
                         </span>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
-                          {mod.title}
+                        <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                          {c.title}
                         </h2>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {mod.tagline}
-                      </p>
                     </div>
                   </div>
-
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${mod.badgeColor} shrink-0`}
-                  >
-                    {mod.badge}
-                  </span>
                 </div>
 
-                {/* Key Capabilities List */}
-                <div className="py-4 space-y-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-mono block">
-                    Core Capabilities
-                  </span>
-                  <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-                    {mod.features.map((feat, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-500 shrink-0 mt-0.5" />
-                        <span>{feat}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {/* Short Description */}
+                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-2 mb-2.5">
+                  {c.tagline}
+                </p>
+
+                {/* Explanatory Information Items (All Text, What It Shows) */}
+                <ul className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                  {c.items.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2 leading-relaxed">
+                      <span className="w-3.5 h-3.5 rounded-full bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-2.5 h-2.5" />
+                      </span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              {/* Bottom Quick Metrics & Launch Button */}
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-4 text-xs font-mono">
-                  {mod.metrics.map((m, idx) => (
-                    <div key={idx}>
-                      <span className="text-[10px] text-slate-400 block">{m.label}</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">
-                        {m.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-600 dark:text-cyan-400 group-hover:translate-x-1 transition-transform">
-                  <span>Open {mod.title}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
+              {/* Action Button */}
+              <div className="pt-3 mt-3 border-t border-slate-100 dark:border-[#162544]">
+                <button
+                  onClick={() => setActiveModule(c.id)}
+                  className={`w-full py-2 px-3 rounded-lg text-xs font-semibold border shadow-xs flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${c.btnBg} group/btn`}
+                >
+                  <span>Open {c.title}</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-1" />
+                </button>
               </div>
             </div>
           );
@@ -274,4 +185,3 @@ export const LandingPage: React.FC = () => {
     </div>
   );
 };
-

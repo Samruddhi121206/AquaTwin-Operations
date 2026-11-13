@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { usePlant } from '../../../context/PlantContext';
+import { generateEnergyTrends } from '../../../modules/Analysis/sampleData';
 import {
   Zap,
   TrendingDown,
@@ -26,10 +27,14 @@ import {
   Cell,
   LineChart,
   Line,
+  Legend,
 } from 'recharts';
 
 export const EnergyView: React.FC = () => {
-  const { telemetry } = usePlant();
+  const { telemetry, theme } = usePlant();
+  const [energyTrends] = useState(() => generateEnergyTrends(24));
+
+  const isDark = theme === 'dark';
 
   // Energy breakdown by equipment
   const powerData = [
@@ -37,15 +42,6 @@ export const EnergyView: React.FC = () => {
     { name: 'P-201 (Booster)', powerKw: telemetry.p201_powerKw, color: '#06b6d4' },
     { name: 'P-101 (Feed)', powerKw: telemetry.p101_powerKw, color: '#3b82f6' },
     { name: 'CD-201 & Controls', powerKw: 0.8, color: '#10b981' },
-  ];
-
-  // Specific energy trade-off curve across recovery percentages
-  const tradeOffCurve = [
-    { recovery: 65, sec: 2.15, flux: 16.5 },
-    { recovery: 70, sec: 2.38, flux: 17.8 },
-    { recovery: 75, sec: 2.70, flux: 19.4 },
-    { recovery: 80, sec: 3.18, flux: 21.0 },
-    { recovery: 85, sec: 3.85, flux: 22.8 },
   ];
 
   const electricityRateKwh = 0.12; // $0.12 per kWh
@@ -121,7 +117,7 @@ export const EnergyView: React.FC = () => {
         </div>
       </div>
 
-      {/* Charts Grid: Power Breakdown & Recovery vs SEC curve */}
+      {/* Charts Grid: Power Breakdown & 24h SEC Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Power Breakdown by Asset */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
@@ -135,16 +131,15 @@ export const EnergyView: React.FC = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={powerData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
-                <XAxis dataKey="name" stroke="#64748b" fontSize={11} tickLine={false} />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} />
+                <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
+                    backgroundColor: isDark ? '#0a1128' : '#ffffff',
+                    borderColor: isDark ? '#1e3366' : '#cbd5e1',
                     borderRadius: '8px',
-                    color: '#f8fafc',
-                    fontSize: '12px',
+                    fontSize: '11px',
                   }}
                   formatter={(val: any) => [`${val} kW`, 'Active Power']}
                 />
@@ -158,37 +153,54 @@ export const EnergyView: React.FC = () => {
           </div>
         </div>
 
-        {/* Recovery vs SEC Trade-off Curve */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
-            Recovery (%) vs Specific Energy (SEC) Curve
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-            Thermodynamic curve: increasing recovery increases brine osmotic backpressure and energy intensity.
-          </p>
+        {/* 24-Hour Specific Energy (SEC) & Pump Load Trend */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  24-Hour Diurnal Energy & SEC Trend
+                </h3>
+                <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 font-mono text-[9px]">
+                  Sample Data
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Dynamic diurnal variations in Specific Energy (kWh/m³) and Active Power Demand (kW).
+              </p>
+            </div>
+          </div>
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={tradeOffCurve} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.2} />
-                <XAxis dataKey="recovery" stroke="#64748b" fontSize={11} tickLine={false} unit="%" />
-                <YAxis stroke="#64748b" fontSize={11} tickLine={false} unit=" kWh" />
+              <LineChart data={energyTrends} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                <XAxis dataKey="timestamp" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} />
+                <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} domain={['auto', 'auto']} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#334155',
+                    backgroundColor: isDark ? '#0a1128' : '#ffffff',
+                    borderColor: isDark ? '#1e3366' : '#cbd5e1',
                     borderRadius: '8px',
-                    color: '#f8fafc',
-                    fontSize: '12px',
+                    fontSize: '11px',
                   }}
+                />
+                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
+                <Line
+                  type="monotone"
+                  dataKey="secKwhM3"
+                  name="SEC (kWh/m³)"
+                  stroke="#6366f1"
+                  strokeWidth={2.2}
+                  dot={{ r: 2 }}
                 />
                 <Line
                   type="monotone"
-                  dataKey="sec"
-                  name="SEC (kWh/m³)"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  dot={{ r: 4 }}
+                  dataKey="totalPowerKw"
+                  name="Active Power (kW)"
+                  stroke="#06b6d4"
+                  strokeWidth={2}
+                  dot={false}
                 />
               </LineChart>
             </ResponsiveContainer>

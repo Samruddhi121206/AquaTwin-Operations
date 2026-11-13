@@ -10,6 +10,7 @@ export type ModuleType =
   | 'control_panel'
   | 'analysis'
   | 'settings'
+  | 'profile'
   // Legacy aliases
   | 'operations'
   | 'dashboard'
