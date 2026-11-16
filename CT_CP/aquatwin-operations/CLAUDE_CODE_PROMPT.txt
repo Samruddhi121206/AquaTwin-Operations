@@ -1,0 +1,54 @@
+AQUATWIN OPERATIONS — CONTROL PANEL VISUAL REDESIGN
+
+Implement the Control Panel redesign directly in this existing project. Do not only explain or create a plan.
+
+First inspect the existing Control Panel page, CabinetOverview, Component Inspector, MonitoringDashboard,
+PlantContext, routing, assets and styles. Preserve the existing simulation and interactions.
+
+REFERENCE FILES (read these images from the project; do not ask me to paste or upload them):
+1. public/reference-images/control-panel/01-current-control-panel.png
+   This is the CURRENT UI. Use it to understand what must be replaced and what functionality/layout already exists.
+2. public/reference-images/control-panel/02-desired-control-panel-layout.png
+   This is the TARGET OVERALL PAGE LAYOUT and visual direction.
+3. public/reference-images/control-panel/03-desired-cabinet-closeup.png
+   This is the TARGET MAIN CABINET VISUAL. Study the cabinet arrangement, materials, component density,
+   wiring, rails, indicators and proportions.
+
+MAIN VISUAL CHANGE
+The current cabinet is a flat schematic made from simple rectangles and basic icons. Replace that visual
+approach with a realistic, front-facing industrial electrical cabinet similar to the target references.
+Use the cabinet close-up as the main visual asset if appropriate, with responsive sizing and a clean crop.
+Do not stretch it or make it blurry. If using it as an image base, place accurately positioned transparent,
+accessible clickable hotspots over the relevant equipment. Do not bake the entire page screenshot into the UI.
+
+CABINET CONTENT / VISUAL DETAILS
+Show a metal enclosure and mounting plate, DIN rails, PLC CPU and I/O modules, MCBs/breakers, isolator,
+contactor groups, safety relays, 24V power supply, terminal blocks, cable ducts, and neatly routed coloured
+industrial wiring. Include realistic shadows, metal texture, screws, labels and status LEDs. Use AquaTwin
+branding only; no Thermax branding. Do not replace the cabinet with another row of cards or a flat P&ID.
+
+PAGE LAYOUT
+Keep the existing AquaTwin navigation and header. Make the cabinet the dominant central/left visual, with
+a compact right-side Component Inspector and PLC Monitoring panel, matching the target layout. Keep the
+page readable at the existing desktop viewport and responsive at smaller widths.
+
+FUNCTIONALITY THAT MUST REMAIN WORKING
+- Clicking a cabinet component selects it and updates the existing Component Inspector.
+- Keep existing component metadata, tag IDs, linked I/O, PlantContext integration and virtual controls.
+- Keep simulated PLC CPU/communication health, I/O summary and alarm monitoring.
+- Equipment start/stop toggles must continue updating the existing simulated plant state.
+- Keep all values clearly labelled SIMULATED. Never claim a physical PLC connection.
+- If the cabinet image is used as the base, implement hotspots as separate transparent React elements or
+  SVG overlays, with meaningful accessible labels and responsive positioning.
+
+IMPLEMENTATION RULES
+- Modify only the Control Panel and directly related components/styles/assets.
+- Do not rebuild the app, create a separate demo page, or alter the Plants, Input/Output or Analysis sections.
+- Do not remove working features or replace real state with hard-coded demo values.
+- Avoid unnecessary dependencies.
+- Inspect existing conventions before editing; reuse existing components and data.
+- Do not start another Vite server. The existing app uses http://localhost:3000/.
+
+After implementing, run the available typecheck/build or relevant tests, fix issues caused by your changes,
+and report the exact files changed plus any remaining limitations. Start by reading the three reference images
+and then make the actual code changes.
