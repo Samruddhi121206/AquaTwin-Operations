@@ -83,6 +83,7 @@ export interface CatalogueModuleItem {
 
 export interface TerminalLogMessage {
   id: string;
+  epoch?: number;
   timestamp: string;
   type: 'CONNECTION' | 'VALUE' | 'OUTPUT' | 'DIAGNOSTIC' | 'SYSTEM' | 'COMMAND';
   level: 'INFO' | 'WARN' | 'ERROR' | 'SYSTEM';

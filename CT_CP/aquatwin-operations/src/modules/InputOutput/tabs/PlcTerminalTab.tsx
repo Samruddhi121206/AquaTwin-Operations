@@ -1,282 +1,80 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import { Copy, Download, Pause, Play, Trash2 } from 'lucide-react';
 import { TerminalLogMessage, ExtendedPlcTag, PlcDeviceConfig } from '../types';
-import {
-  Terminal as TerminalIcon,
-  Play,
-  Pause,
-  Download,
-  Trash2,
-  Send,
-  HelpCircle,
-  Filter,
-  CheckCircle2,
-  Clock,
-  Maximize2,
-  ShieldCheck,
-} from 'lucide-react';
+import { useTags } from '../../../context/TagRegistryContext';
+import { usePlcGateway } from '../../../services/plcBackendService';
 
-interface PlcTerminalTabProps {
+interface Props {
   logs: TerminalLogMessage[];
-  device: PlcDeviceConfig;
+  device?: PlcDeviceConfig;
   tags: ExtendedPlcTag[];
   onClearLogs: () => void;
-  onAddLog: (msg: Omit<TerminalLogMessage, 'id' | 'timestamp'>) => void;
+  onAddLog: (m: Omit<TerminalLogMessage, 'id' | 'timestamp'>) => void;
 }
 
-export const PlcTerminalTab: React.FC<PlcTerminalTabProps> = ({
-  logs,
-  device,
-  tags,
-  onClearLogs,
-  onAddLog,
-}) => {
-  const [commandInput, setCommandInput] = useState<string>('');
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [autoScroll, setAutoScroll] = useState<boolean>(true);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+interface Line { t: number; kind: string; level: string; text: string; src: 'GATEWAY' | 'UI' }
+const FILTERS = ['ALL', 'INFO', 'WARN', 'ERROR', 'READ', 'WRITE', 'CONNECT'] as const;
+const stamp = (t: number) => { const d = new Date(t); return `${d.toLocaleTimeString([], { hour12: false })}.${String(d.getMilliseconds()).padStart(3, '0')}`; };
 
-  const logEndRef = useRef<HTMLDivElement>(null);
+export const PlcTerminalTab: React.FC<Props> = ({ logs, tags, onClearLogs, onAddLog }) => {
+  const gw = usePlcGateway();
+  const { history, source } = useTags();
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('ALL');
+  const [paused, setPaused] = useState(false);
+  const [frozen, setFrozen] = useState<Line[] | null>(null);
+  const [cleared, setCleared] = useState(0); // clears the visible buffer only; the gateway keeps its own history
+  const [cmd, setCmd] = useState('');
+  const [local, setLocal] = useState<Line[]>([]);
+  const box = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (autoScroll && !isPaused) {
-      logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [logs, autoScroll, isPaused]);
+  const lines = useMemo<Line[]>(() => {
+    const g = gw.events.map((e) => ({ t: Date.parse(e.ts), kind: e.kind, level: e.level, text: e.text, src: 'GATEWAY' as const }));
+    const u = logs.map((l: any) => ({ t: l.epoch ?? 0, kind: l.type === 'OUTPUT' ? 'WRITE' : l.type, level: l.level === 'SYSTEM' ? 'INFO' : l.level, text: l.text, src: 'UI' as const })).filter((l) => l.t);
+    return [...g, ...u, ...local].filter((l) => l.t > cleared).sort((a, b) => a.t - b.t);
+  }, [gw.events, logs, local, cleared]);
 
-  // Safe Command Grammar Parser
-  const handleExecuteCommand = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cmd = commandInput.trim();
-    if (!cmd) return;
+  const shown = (paused ? frozen ?? lines : lines).filter((l) => filter === 'ALL' || l.level === filter || l.kind === filter);
+  const toggle = () => { setFrozen(paused ? null : lines); setPaused(!paused); };
+  const text = () => shown.map((l) => `[${stamp(l.t)}] ${l.kind.padEnd(8)} ${l.src === 'UI' ? '(ui) ' : ''}${l.text}`).join('\n');
 
-    // Log the user's input command
-    onAddLog({
-      type: 'COMMAND',
-      level: 'SYSTEM',
-      source: 'OPERATOR',
-      text: `> ${cmd}`,
-    });
-
-    const parts = cmd.split(' ').filter(Boolean);
-    const verb = parts[0]?.toLowerCase();
-    const arg = parts[1];
-
-    switch (verb) {
-      case 'help':
-        onAddLog({
-          type: 'SYSTEM',
-          level: 'INFO',
-          source: 'PLC_SHELL',
-          text: 'Available Commands: help, status, list-tags, read <TAG_OR_ADDR>, read-all, diagnostics, ping, clear',
-        });
-        break;
-
-      case 'status':
-        onAddLog({
-          type: 'DIAGNOSTIC',
-          level: 'INFO',
-          source: 'PLC_SHELL',
-          text: `CPU: ${device.cpuModel} (${device.family}) | Mode: ${device.mode} | Host: ${device.host}:${device.port} | Protocol: ${device.protocol} | Status: RUN | Errors: ${device.errorCode}`,
-        });
-        break;
-
-      case 'list-tags':
-        onAddLog({
-          type: 'SYSTEM',
-          level: 'INFO',
-          source: 'PLC_SHELL',
-          text: `Mapped Tags (${tags.length}): ${tags.map((t) => `${t.id} [${t.address}]`).join(', ')}`,
-        });
-        break;
-
-      case 'read':
-        if (!arg) {
-          onAddLog({
-            type: 'SYSTEM',
-            level: 'WARN',
-            source: 'PLC_SHELL',
-            text: 'Usage: read <TAG_NAME_OR_ADDRESS> (e.g. read TK101_LEVEL or read X0.0)',
-          });
-        } else {
-          const found = tags.find(
-            (t) =>
-              t.id.toLowerCase() === arg.toLowerCase() ||
-              t.address.toLowerCase() === arg.toLowerCase()
-          );
-          if (found) {
-            onAddLog({
-              type: 'VALUE',
-              level: 'INFO',
-              source: 'SLMP_READER',
-              text: `Read: ${found.address} (${found.id}) = ${found.currentValue} ${
-                found.scaling.unit !== 'bool' ? found.scaling.unit : ''
-              } [Quality: ${found.quality}]`,
-            });
-          } else {
-            onAddLog({
-              type: 'SYSTEM',
-              level: 'ERROR',
-              source: 'PLC_SHELL',
-              text: `Tag or address "${arg}" not found in current hardware mapping table.`,
-            });
-          }
-        }
-        break;
-
-      case 'read-all':
-        onAddLog({
-          type: 'VALUE',
-          level: 'INFO',
-          source: 'SLMP_BATCH',
-          text: `Batch SLMP 3E Read: ${tags
-            .slice(0, 6)
-            .map((t) => `${t.address}=${t.currentValue}`)
-            .join(' | ')} ... (${tags.length} channels scanned in 12ms)`,
-        });
-        break;
-
-      case 'diagnostics':
-        onAddLog({
-          type: 'DIAGNOSTIC',
-          level: 'INFO',
-          source: 'PLC_DIAG',
-          text: `Diagnostics Report: ScanTime=${device.scanTimeMs}ms | CpuLoad=${device.cpuLoadPercent}% | Battery=${device.batteryStatus} | ErrorCode=${device.errorCode} | BusStatus=NORMAL`,
-        });
-        break;
-
-      case 'ping':
-        onAddLog({
-          type: 'CONNECTION',
-          level: 'INFO',
-          source: 'ICMP_GATEWAY',
-          text: `PING ${device.host}: 64 bytes received in 45ms. TTL=64. Link quality 100%.`,
-        });
-        break;
-
-      case 'clear':
-        onClearLogs();
-        break;
-
-      default:
-        onAddLog({
-          type: 'SYSTEM',
-          level: 'WARN',
-          source: 'PLC_SHELL',
-          text: `Unknown command "${verb}". Type "help" to view supported engineering commands.`,
-        });
-        break;
-    }
-
-    setCommandInput('');
+  const run = (raw: string) => {
+    const [c, arg] = raw.trim().split(/\s+/);
+    const out = (t: string, level = 'INFO') => setLocal((p) => [...p, { t: Date.now(), kind: 'COMMAND', level, text: t, src: 'UI' }]);
+    out(`> ${raw}`);
+    const tag = tags.find((x) => x.id.toLowerCase() === (arg ?? '').toLowerCase());
+    if (c === 'help') out('Commands: help | status | read <tag> | history <tag>. Writes are not available in the terminal.');
+    else if (c === 'status') out(`mode=${source} gateway=${gw.reachable ? 'reachable' : 'UNREACHABLE'} ${gw.status ? `protocolVerified=${!!gw.status.protocolVerified} tcpOpen=${!!gw.status.tcpOpen}` : ''} tags=${tags.length}`);
+    else if (c === 'read' && tag) out(`${tag.id} = ${String(tag.currentValue)} ${tag.scaling.unit} quality=${tag.quality} source=${source} at ${tag.lastUpdate}`);
+    else if (c === 'history' && tag) { const h = history[tag.id] ?? []; out(h.length ? `${tag.id}: ${h.length} samples, last 5: ${h.slice(-5).map((s) => s.v).join(', ')}` : `${tag.id}: no numeric history`); }
+    else if (c === 'read' || c === 'history') out(`Unknown tag "${arg ?? ''}"`, 'WARN');
+    else out(`Unknown or restricted command "${c}". Type help.`, 'WARN');
+    onAddLog({ type: 'COMMAND', level: 'INFO', source: 'TERMINAL', text: `terminal: ${raw}` });
   };
 
-  const handleExportLogs = () => {
-    const textContent = logs
-      .map((l) => `[${l.timestamp}] [${l.level}] [${l.source}] ${l.text}`)
-      .join('\n');
-    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `PLC_Terminal_Log_${new Date().toISOString().split('T')[0]}.log`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const btn = 'flex items-center gap-1 rounded-sm border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800';
+  const color = (l: Line) => (l.level === 'ERROR' ? 'text-red-400' : l.level === 'WARN' ? 'text-amber-300' : l.kind === 'VALUE' ? 'text-emerald-300' : l.kind === 'COMMAND' ? 'text-cyan-300' : 'text-slate-200');
 
   return (
-    <div
-      className={`bg-slate-950 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex flex-col font-mono text-xs ${
-        isFullscreen ? 'fixed inset-4 z-50' : 'h-[520px]'
-      }`}
-    >
-      {/* Terminal Title Bar matching user screenshot */}
-      <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <TerminalIcon className="w-4 h-4 text-cyan-400" />
-          <span className="font-bold text-slate-100 text-xs">
-            PLC Terminal Console — {device.cpuModel} ({device.host}:5007)
-          </span>
-
-          {/* Green Connected Badge matching screenshot */}
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Connected
-          </span>
-        </div>
-
-        {/* Action Buttons: Clear | Export Logs | Maximize matching screenshot */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onClearLogs}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition"
-          >
-            Clear
-          </button>
-
-          <button
-            onClick={handleExportLogs}
-            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition flex items-center gap-1"
-          >
-            <Download className="w-3 h-3" />
-            <span>Export Logs</span>
-          </button>
-
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
-            title={isFullscreen ? 'Restore' : 'Fullscreen'}
-          >
-            <Maximize2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
+    <div className="border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-900">
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-slate-300 p-2 dark:border-slate-700">
+        {FILTERS.map((f) => <button key={f} onClick={() => setFilter(f)} className={`rounded-sm border px-2 py-1 text-xs ${filter === f ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 dark:border-slate-600'}`}>{f}</button>)}
+        <button className={`${btn} ml-auto`} onClick={toggle}>{paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}{paused ? 'Resume' : 'Pause'}</button>
+        <button className={btn} onClick={() => { setCleared(Date.now()); setFrozen(null); onClearLogs(); }} title="Clears the visible buffer only"><Trash2 className="h-3 w-3" />Clear</button>
+        <button className={btn} onClick={() => navigator.clipboard?.writeText(text())}><Copy className="h-3 w-3" />Copy</button>
+        <button className={btn} onClick={() => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text()], { type: 'text/plain' })); a.download = 'plc-terminal.log'; a.click(); URL.revokeObjectURL(a.href); }}><Download className="h-3 w-3" />Export</button>
       </div>
-
-      {/* Terminal Output Area matching screenshot format:
-          [12:34:12] Connecting to Mitsubishi PLC (R08CPU) at 192.168.1.10... ✓ */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-1.5 select-text bg-slate-950 font-mono text-[11.5px] leading-relaxed">
-        {logs.map((log) => {
-          let textColor = 'text-slate-300';
-          if (log.type === 'CONNECTION') textColor = 'text-emerald-400 font-bold';
-          else if (log.type === 'COMMAND') textColor = 'text-amber-400 font-bold';
-          else if (log.type === 'VALUE') textColor = 'text-cyan-300';
-          else if (log.level === 'ERROR') textColor = 'text-rose-400 font-bold';
-          else if (log.level === 'WARN') textColor = 'text-amber-300';
-
-          return (
-            <div key={log.id} className="flex items-start gap-2 hover:bg-white/5 px-1 rounded transition">
-              <span className="text-slate-500 select-none shrink-0">[{log.timestamp}]</span>
-              <span className={textColor}>{log.text}</span>
-            </div>
-          );
-        })}
-        <div ref={logEndRef} />
+      {!gw.reachable && <div className="border-b border-amber-300 bg-amber-50 px-3 py-1 text-xs text-amber-900">Backend gateway not reachable (ws://localhost:5001). Only local UI events are shown. Start it with <code>npm run server</code>.</div>}
+      <div ref={box} className="h-[420px] overflow-auto bg-slate-950 p-2 font-mono text-[11px] leading-5">
+        {shown.length === 0 && <div className="text-slate-500">No events yet.</div>}
+        {shown.map((l, i) => (
+          <div key={i} className={color(l)}>
+            <span className="text-slate-500">[{stamp(l.t)}]</span> <span className="inline-block w-16">{l.kind}</span>{l.src === 'UI' && <span className="text-slate-500">(ui) </span>}{l.text}
+          </div>
+        ))}
       </div>
-
-      {/* Terminal Input Bar matching screenshot */}
-      <form
-        onSubmit={handleExecuteCommand}
-        className="bg-slate-900 border-t border-slate-800 p-2.5 flex items-center gap-2"
-      >
-        <div className="text-cyan-400 font-bold pl-2 select-none">&gt;</div>
-        <input
-          type="text"
-          value={commandInput}
-          onChange={(e) => setCommandInput(e.target.value)}
-          placeholder="Enter command (e.g. read X0.0, status, list-tags, read-all)..."
-          className="flex-1 bg-transparent text-slate-100 placeholder-slate-500 text-xs focus:outline-hidden font-mono"
-        />
-        <button
-          type="submit"
-          className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-xs"
-        >
-          <Send className="w-3 h-3" />
-          <span>Send</span>
-        </button>
+      <form className="flex border-t border-slate-300 dark:border-slate-700" onSubmit={(e) => { e.preventDefault(); if (cmd.trim()) run(cmd); setCmd(''); }}>
+        <span className="px-2 py-1.5 font-mono text-xs text-slate-500">&gt;</span>
+        <input value={cmd} onChange={(e) => setCmd(e.target.value)} placeholder="help | status | read <tag> | history <tag>" aria-label="Terminal command" className="flex-1 bg-transparent py-1.5 font-mono text-xs outline-none" />
       </form>
     </div>
   );

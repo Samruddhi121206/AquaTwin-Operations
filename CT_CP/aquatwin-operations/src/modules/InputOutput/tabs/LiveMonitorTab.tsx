@@ -182,7 +182,7 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredTags.map((tag) => {
                 const isBool = tag.type === 'DI' || tag.type === 'DO';
-                const isNormal = tag.fault === null;
+                const isNormal = tag.fault === null && tag.quality !== 'STALE' && tag.quality !== 'BAD';
                 const isTripped = tag.id.includes('TRIP') && tag.currentValue === true;
 
                 return (
@@ -262,7 +262,7 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
                               : 'text-amber-600 dark:text-amber-400'
                           }`}
                         >
-                          {isTripped ? 'Tripped' : isNormal ? 'Normal' : 'Warning'}
+                          {isTripped ? 'Tripped' : isNormal ? 'Normal' : tag.quality === 'STALE' ? 'Stale' : tag.quality === 'BAD' ? 'Bad' : 'Warning'}
                         </span>
                       </span>
                     </td>

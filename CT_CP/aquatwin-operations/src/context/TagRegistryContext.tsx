@@ -74,10 +74,21 @@ export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return plcBackend.subscribe((packet) => {
       if (source !== 'REAL' || !packet.readings?.length) return;
       setTags((prev) => prev.map((tag) => {
-        const m = packet.readings.find((r) => r.tagId === tag.id || r.address === tag.address);
-        return m ? { ...tag, currentValue: m.value, rawCounts: m.rawCounts ?? tag.rawCounts, quality: m.quality as any, lastUpdate: m.timestamp } : tag;
+        const m = packet.readings.find((r) => r.tagId === tag.id);
+        if (!m) return tag;
+        realSeen.current.set(tag.id, Date.now());
+        return { ...tag, currentValue: m.value, rawCounts: m.rawCounts ?? tag.rawCounts, quality: m.quality as any, lastUpdate: new Date(m.timestamp).toLocaleTimeString() };
       }));
     });
+  }, [source]);
+
+  /** Real PLC: last time each tag got a backend reading. Tags never read (or older than the timeout) are STALE. */
+  const realSeen = useRef(new Map<string, number>());
+  const STALE_MS = 5000;
+  useEffect(() => {
+    if (source !== 'REAL') return;
+    realSeen.current.clear();
+    setTags((prev) => prev.map((t) => ({ ...t, quality: 'STALE' as const })));
   }, [source]);
 
   const setValue = (id: string, value: number | boolean | string, extra: Partial<ExtendedPlcTag> = {}) =>
@@ -120,6 +131,8 @@ export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     const id = setInterval(() => {
       const t = Date.now();
+      if (source === 'REAL')
+        setTags((prev) => prev.map((x) => (x.quality !== 'STALE' && t - (realSeen.current.get(x.id) ?? 0) > STALE_MS ? { ...x, quality: 'STALE' as const } : x)));
       setHistory((h) => {
         const next = { ...h };
         for (const tag of latest.current)

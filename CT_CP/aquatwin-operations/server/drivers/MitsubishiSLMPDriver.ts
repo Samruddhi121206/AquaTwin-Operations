@@ -21,7 +21,11 @@ export class MitsubishiSLMPDriver implements IPLCDriver {
   private lastCommTime: string | null = null;
   private lastErrorCode = '0000';
   private errorCount = 0;
-  private scanTimeMs = 10;
+  private scanTimeMs = 0;
+  /** true only after a valid SLMP response (end code 0): a TCP connection alone is not a verified session. */
+  private verified = false;
+  private queue: Promise<unknown> = Promise.resolve();
+  private stats = { readsOk: 0, readsFailed: 0, timeouts: 0, reconnects: 0, lastRttMs: 0 };
 
   // Device type code mapping for Mitsubishi MELSEC
   private static readonly DEVICE_CODES: Record<string, number> = {
@@ -38,10 +42,10 @@ export class MitsubishiSLMPDriver implements IPLCDriver {
 
   constructor(config: Partial<PLCConnectionConfig> = {}) {
     this.config = {
-      host: config.host || '192.168.1.10',
-      port: config.port || 5007,
-      family: config.family || 'iQ-R',
-      cpuModel: config.cpuModel || 'R08CPU',
+      host: config.host ?? '',
+      port: config.port ?? 0,
+      family: config.family ?? 'iQ-R',
+      cpuModel: config.cpuModel ?? '',
       protocol: 'SLMP_3E',
       timeoutMs: config.timeoutMs || 2500,
       scanIntervalMs: config.scanIntervalMs || 500,
@@ -50,54 +54,56 @@ export class MitsubishiSLMPDriver implements IPLCDriver {
   }
 
   async connect(): Promise<boolean> {
+    if (this.connected) this.stats.reconnects++;
+    this.socket?.destroy();
+    this.verified = false;
     return new Promise((resolve) => {
-      try {
-        this.socket = new net.Socket();
-        this.socket.setTimeout(this.config.timeoutMs);
-
-        this.socket.connect(this.config.port, this.config.host, () => {
-          this.connected = true;
-          this.lastCommTime = new Date().toLocaleTimeString();
-          this.lastErrorCode = '0000';
-          resolve(true);
-        });
-
-        this.socket.on('error', (err) => {
-          this.connected = false;
-          this.lastErrorCode = 'C035'; // Socket connection timeout / unreachable
-          this.errorCount++;
-          resolve(false);
-        });
-
-        this.socket.on('timeout', () => {
-          this.connected = false;
-          this.lastErrorCode = 'C059'; // Command execution timeout
-          this.socket?.destroy();
-          resolve(false);
-        });
-      } catch (e) {
+      const sock = new net.Socket();
+      this.socket = sock;
+      sock.setTimeout(this.config.timeoutMs);
+      sock.once('connect', () => {
+        this.connected = true; // TCP only; `verified` stays false until a valid SLMP read
+        this.lastErrorCode = '0000';
+        sock.setTimeout(0);
+        resolve(true);
+      });
+      const fail = (code: string) => {
         this.connected = false;
+        this.verified = false;
+        this.lastErrorCode = code;
+        this.errorCount++;
+        sock.destroy();
         resolve(false);
-      }
+      };
+      sock.on('error', () => fail('TCP_ERROR'));
+      sock.on('timeout', () => fail('TCP_TIMEOUT'));
+      sock.on('close', () => {
+        if (this.socket === sock) {
+          this.connected = false;
+          this.verified = false;
+        }
+      });
+      sock.connect(this.config.port, this.config.host);
     });
   }
 
   async disconnect(): Promise<boolean> {
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = null;
-    }
+    this.socket?.destroy();
+    this.socket = null;
     this.connected = false;
+    this.verified = false;
     return true;
   }
 
   isConnected(): boolean {
-    return this.connected;
+    return this.verified;
   }
 
   getStatus(): PLCDriverStatus {
     return {
-      connected: this.connected,
+      connected: this.verified,
+      tcpOpen: this.connected,
+      protocolVerified: this.verified,
       mode: 'REAL',
       host: this.config.host,
       port: this.config.port,
@@ -106,8 +112,9 @@ export class MitsubishiSLMPDriver implements IPLCDriver {
       scanTimeMs: this.scanTimeMs,
       errorCount: this.errorCount,
       lastErrorCode: this.lastErrorCode,
-      cpuMode: 'RUN',
-      batteryStatus: 'OK',
+      cpuMode: 'UNKNOWN', // not read from the CPU; never assumed RUN
+      batteryStatus: 'UNKNOWN',
+      ...this.stats,
     };
   }
 
@@ -148,7 +155,8 @@ export class MitsubishiSLMPDriver implements IPLCDriver {
     // If octal notation for X/Y
     let headDevice = 0;
     if (devPrefix === 'X' || devPrefix === 'Y') {
-      headDevice = parseInt(numStr, 8);
+      // X/Y are octal on iQ-F (FX5) and hexadecimal on iQ-R / Q / L.
+      headDevice = parseInt(numStr, this.config.family === 'iQ-F' || this.config.family === 'FX5' ? 8 : 16);
     } else {
       headDevice = parseInt(numStr, 10);
     }
@@ -202,112 +210,95 @@ export class MitsubishiSLMPDriver implements IPLCDriver {
     return buf;
   }
 
-  async readTag(tagId: string, address: string): Promise<TagReadResult> {
-    if (!this.connected || !this.socket) {
-      return {
-        tagId,
-        address,
-        value: 0,
-        quality: 'BAD',
-        timestamp: new Date().toLocaleTimeString(),
-      };
-    }
+  /** Reads are serialised on the single socket and each has a timeout, so responses cannot be mismatched or hang. */
+  readTag(tagId: string, address: string): Promise<TagReadResult> {
+    const run = () => this.readOnce(tagId, address);
+    const p = this.queue.then(run, run);
+    this.queue = p;
+    return p;
+  }
 
+  private bad(tagId: string, address: string): TagReadResult {
+    this.stats.readsFailed++;
+    return { tagId, address, value: 0, quality: 'BAD', timestamp: new Date().toISOString() };
+  }
+
+  private readOnce(tagId: string, address: string): Promise<TagReadResult> {
+    const sock = this.socket;
+    if (!this.connected || !sock) return Promise.resolve(this.bad(tagId, address));
     const { deviceCode, headDevice, isBit } = this.parseAddress(address);
     const frame = this.build3EReadFrame(deviceCode, headDevice, isBit, 1);
 
     return new Promise((resolve) => {
-      const startTime = Date.now();
-
-      const onData = (data: Buffer) => {
-        this.socket?.removeListener('data', onData);
-        this.lastCommTime = new Date().toLocaleTimeString();
-        this.scanTimeMs = Math.max(1, Date.now() - startTime);
-
-        // SLMP 3E Response Frame:
-        // [0-1] Subheader: 0xD0, 0x00
-        // ...
-        // [9-10] End Code: 0x00, 0x00 (Success)
-        // [11+] Data payload
-        if (data.length >= 11) {
-          const endCode = data.readUInt16LE(9);
-          if (endCode === 0) {
-            let value: number | boolean = 0;
-            if (isBit) {
-              const bitByte = data.readUInt8(11);
-              value = (bitByte & 0x01) === 1;
-            } else {
-              value = data.readInt16LE(11);
-            }
-
-            resolve({
-              tagId,
-              address,
-              value,
-              rawCounts: typeof value === 'number' ? value : undefined,
-              quality: 'GOOD',
-              timestamp: new Date().toLocaleTimeString(),
-            });
-            return;
-          }
+      const start = Date.now();
+      let timer: ReturnType<typeof setTimeout>;
+      const done = (r: TagReadResult | null, code?: string) => {
+        clearTimeout(timer);
+        sock.removeListener('data', onData);
+        if (r) {
+          this.verified = true;
+          this.stats.readsOk++;
+          this.stats.lastRttMs = this.scanTimeMs = Math.max(1, Date.now() - start);
+          this.lastCommTime = new Date().toISOString();
+          this.lastErrorCode = '0000';
+          resolve(r);
+        } else {
+          this.verified = false;
+          this.errorCount++;
+          this.lastErrorCode = code ?? 'BAD_RESPONSE';
+          resolve(this.bad(tagId, address));
         }
-
-        resolve({
-          tagId,
-          address,
-          value: 0,
-          quality: 'BAD',
-          timestamp: new Date().toLocaleTimeString(),
-        });
       };
-
-      this.socket?.once('data', onData);
-      this.socket?.write(frame);
+      const onData = (data: Buffer) => {
+        // 3E binary response: D0 00 ... [9-10] end code, [11+] data. Bit devices: 1st point in the HIGH nibble.
+        if (data.length < 11) return done(null, 'SHORT_RESPONSE');
+        const endCode = data.readUInt16LE(9);
+        if (endCode !== 0) return done(null, endCode.toString(16).toUpperCase().padStart(4, '0'));
+        if (data.length < (isBit ? 12 : 13)) return done(null, 'SHORT_RESPONSE');
+        const value: number | boolean = isBit ? (data.readUInt8(11) & 0x10) !== 0 : data.readInt16LE(11);
+        done({ tagId, address, value, rawCounts: typeof value === 'number' ? value : undefined, quality: 'GOOD', timestamp: new Date().toISOString() });
+      };
+      timer = setTimeout(() => {
+        this.stats.timeouts++;
+        done(null, 'READ_TIMEOUT');
+      }, this.config.timeoutMs);
+      sock.on('data', onData);
+      sock.write(frame);
     });
   }
 
   async readBatch(tags: { tagId: string; address: string }[]): Promise<TagReadResult[]> {
-    return Promise.all(tags.map((t) => this.readTag(t.tagId, t.address)));
+    const out: TagReadResult[] = [];
+    for (const t of tags) out.push(await this.readTag(t.tagId, t.address));
+    return out;
   }
 
-  async writeTag(
-    tagId: string,
-    address: string,
-    value: number | boolean,
-    authorizationToken?: string
-  ): Promise<TagWriteResult> {
-    if (this.config.readOnly) {
-      return {
-        success: false,
-        tagId,
-        address,
-        valueWritten: value,
-        message: 'Industrial Safety Interlock: Physical PLC writes locked in Read-Only Telemetry Mode.',
-        timestamp: new Date().toLocaleTimeString(),
-      };
-    }
-
+  async writeTag(tagId: string, address: string, value: number | boolean): Promise<TagWriteResult> {
+    // Physical writes are not implemented: they need commissioning approval and an allowlist (spec 8.3).
     return {
       success: false,
       tagId,
       address,
       valueWritten: value,
-      message: 'Write denied: Requires certified engineer physical confirmation on GX Works3.',
-      timestamp: new Date().toLocaleTimeString(),
+      message: 'BLOCKED: writes to a physical PLC are disabled (read-only mode).',
+      timestamp: new Date().toISOString(),
     };
   }
 
-  async ping(): Promise<{ success: boolean; latencyMs: number; message: string }> {
-    const startTime = Date.now();
-    const isConn = await this.connect();
-    const latency = Date.now() - startTime;
-    return {
-      success: isConn,
-      latencyMs: latency,
-      message: isConn
-        ? `Physical Mitsubishi PLC responded in ${latency}ms (TCP port ${this.config.port} active)`
-        : `Connection to Mitsubishi PLC at ${this.config.host}:${this.config.port} timed out.`,
-    };
+  /** TCP reachability only. Uses a throwaway socket and does NOT touch the session. */
+  ping(): Promise<{ success: boolean; latencyMs: number; message: string }> {
+    return new Promise((resolve) => {
+      const start = Date.now();
+      const sock = new net.Socket();
+      const end = (success: boolean, message: string) => {
+        sock.destroy();
+        resolve({ success, latencyMs: Date.now() - start, message });
+      };
+      sock.setTimeout(this.config.timeoutMs);
+      sock.once('connect', () => end(true, `TCP port ${this.config.port} reachable. This does not prove SLMP is configured; run Read Test.`));
+      sock.once('timeout', () => end(false, `No TCP response from ${this.config.host}:${this.config.port}`));
+      sock.once('error', (e) => end(false, `TCP error: ${e.message}`));
+      sock.connect(this.config.port, this.config.host);
+    });
   }
 }
-

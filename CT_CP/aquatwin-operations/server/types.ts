@@ -29,8 +29,17 @@ export interface PLCDriverStatus {
   scanTimeMs: number;
   errorCount: number;
   lastErrorCode: string;
-  cpuMode: 'RUN' | 'STOP' | 'PAUSE';
-  batteryStatus: 'OK' | 'LOW';
+  cpuMode: 'RUN' | 'STOP' | 'PAUSE' | 'UNKNOWN';
+  batteryStatus: 'OK' | 'LOW' | 'UNKNOWN';
+  /** TCP socket open (real driver only). */
+  tcpOpen?: boolean;
+  /** A valid protocol response has been received; only then is the PLC considered connected. */
+  protocolVerified?: boolean;
+  readsOk?: number;
+  readsFailed?: number;
+  timeouts?: number;
+  reconnects?: number;
+  lastRttMs?: number;
 }
 
 export interface TagReadResult {

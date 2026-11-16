@@ -22,7 +22,6 @@ import { DiagnosticsTab } from './tabs/DiagnosticsTab';
 import {
   INITIAL_PLC_DEVICE,
   INITIAL_MODULES,
-  INITIAL_TERMINAL_LOGS,
 } from './ioData';
 import {
   PlcDeviceConfig,
@@ -56,7 +55,7 @@ export const IOView: React.FC = () => {
   const [deviceConfig, setDeviceConfig] = useState<PlcDeviceConfig>(INITIAL_PLC_DEVICE);
   const [hardwareModules, setHardwareModules] = useState<PlcHardwareModule[]>(INITIAL_MODULES);
   const { tags, setTags } = useTags();
-  const [terminalLogs, setTerminalLogs] = useState<TerminalLogMessage[]>(INITIAL_TERMINAL_LOGS);
+  const [terminalLogs, setTerminalLogs] = useState<TerminalLogMessage[]>([]);
 
   const handleUpdateDevice = (updated: Partial<PlcDeviceConfig>) => {
     setDeviceConfig((prev) => {
@@ -114,6 +113,7 @@ export const IOView: React.FC = () => {
   const handleAddLog = (msg: Omit<TerminalLogMessage, 'id' | 'timestamp'>) => {
     const newLog: TerminalLogMessage = {
       ...msg,
+      epoch: Date.now(),
       id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       timestamp: new Date().toLocaleTimeString(),
     };
