@@ -76,3 +76,13 @@ export const SAMPLE_RACK = makeRack('R38B', {
 
 export const slotRole = (i: number): 'PSU' | 'CPU' | 'IO' => (i === 0 ? 'PSU' : i === 1 ? 'CPU' : 'IO');
 export const slotLabel = (i: number) => (i === 0 ? 'PS' : String(i - 1));
+
+export const RACK_STORAGE_KEY = 'aquatwin.hwconfig.v1';
+/** Saved rack from this browser, or null if the engineer has not saved a configuration yet. */
+export const loadSavedRack = (): RackConfig | null => {
+  try {
+    const c = JSON.parse(localStorage.getItem(RACK_STORAGE_KEY) ?? 'null');
+    const b = BASE_UNITS.find((x) => x.model === c?.baseUnit);
+    return b && Array.isArray(c.slots) && c.slots.length === b.slots + 1 ? c : null;
+  } catch { return null; }
+};

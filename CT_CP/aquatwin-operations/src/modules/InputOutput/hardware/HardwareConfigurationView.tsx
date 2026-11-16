@@ -2,21 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { AlertTriangle, CheckCircle2, CircleHelp, Download, Info, Maximize2, Save, ScanSearch, ShieldCheck, Upload, XCircle, ZoomIn, ZoomOut } from 'lucide-react';
 import { useRuntimeMode } from '../../../context/RuntimeModeContext';
 import { PlcDeviceConfig } from '../types';
-import { BASE_UNITS, getModule, makeRack, RackConfig, SAMPLE_RACK, slotLabel } from './hardware';
+import { BASE_UNITS, getModule, loadSavedRack, makeRack, RACK_STORAGE_KEY, RackConfig, SAMPLE_RACK, slotLabel } from './hardware';
 import { canPlace, Msg, validate } from './validation';
 import { ModuleCatalogue } from './ModuleCatalogue';
 import { HardwareRack, ViewMode } from './HardwareRack';
 import { BottomModulePanel, ModuleProperties } from './ModulePanels';
 
-const KEY = 'aquatwin.hwconfig.v1';
-const load = (): RackConfig => {
-  try {
-    const c = JSON.parse(localStorage.getItem(KEY) ?? 'null');
-    const b = BASE_UNITS.find((x) => x.model === c?.baseUnit);
-    if (b && Array.isArray(c.slots) && c.slots.length === b.slots + 1) return c;
-  } catch { /* storage unavailable or corrupt: fall back to sample */ }
-  return SAMPLE_RACK;
-};
+const KEY = RACK_STORAGE_KEY;
+const load = (): RackConfig => loadSavedRack() ?? SAMPLE_RACK;
 
 const tbtn = 'flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-800 enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 dark:enabled:hover:bg-slate-800';
 const ICON = { ok: CheckCircle2, warn: AlertTriangle, error: XCircle, info: Info } as const;

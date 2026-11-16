@@ -10,7 +10,9 @@ import { ModeBanner } from '../../components/shared/ModeBanner';
 import { SimulatedBadge } from '../../components/shared/SimulatedBadge';
 import { useTags } from '../../context/TagRegistryContext';
 
-import { PlcOverviewTab } from './tabs/PlcOverviewTab';
+import { IoMappingTab } from './tabs/IoMappingTab';
+import { ConnectionStrip } from './hardware/ConnectionStrip';
+import { loadSavedRack } from './hardware/hardware';
 import { HardwareConfigurationView } from './hardware/HardwareConfigurationView';
 import { LadderLogicTab } from './tabs/LadderLogicTab';
 import { LiveMonitorTab } from './tabs/LiveMonitorTab';
@@ -47,9 +49,9 @@ export const IOView: React.FC = () => {
   const { telemetry, togglePump, setXv101Opening } = usePlant();
 
   // 6 Screens matching user's exact specification
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'hardware' | 'ladder' | 'monitor' | 'terminal' | 'diagnostics'
-  >('overview');
+  const [activeTab, setActiveTab] = useState<'hardware' | 'mapping' | 'monitor' | 'terminal' | 'diagnostics' | 'ladder'>(
+    () => (loadSavedRack() ? 'monitor' : 'hardware') // configured -> Live I/O Monitor, else Hardware Configuration
+  );
 
   const [deviceConfig, setDeviceConfig] = useState<PlcDeviceConfig>(INITIAL_PLC_DEVICE);
   const [hardwareModules, setHardwareModules] = useState<PlcHardwareModule[]>(INITIAL_MODULES);
@@ -124,21 +126,21 @@ export const IOView: React.FC = () => {
 
   // Label map for header breadcrumbs matching screenshot
   const tabTitleMap: Record<typeof activeTab, string> = {
-    overview: 'PLC Overview',
     hardware: 'Hardware Configuration',
-    ladder: 'Ladder Logic View',
-    monitor: 'I/O Monitoring',
+    mapping: 'I/O Mapping',
+    monitor: 'Live I/O Monitor',
     terminal: 'PLC Terminal',
     diagnostics: 'Connection & Diagnostics',
+    ladder: 'Ladder Logic',
   };
 
   const TABS: { key: typeof activeTab; label: string; icon: React.ElementType }[] = [
-    { key: 'overview', label: 'PLC Overview', icon: Cpu },
     { key: 'hardware', label: 'Hardware Configuration', icon: Layers },
-    { key: 'ladder', label: 'Ladder Logic View', icon: FileCode },
-    { key: 'monitor', label: 'I/O Monitoring', icon: Activity },
+    { key: 'mapping', label: 'I/O Mapping', icon: Sliders },
+    { key: 'monitor', label: 'Live I/O Monitor', icon: Activity },
     { key: 'terminal', label: 'PLC Terminal', icon: TerminalIcon },
     { key: 'diagnostics', label: 'Connection & Diagnostics', icon: ShieldCheck },
+    { key: 'ladder', label: 'Ladder Logic', icon: FileCode },
   ];
   const simulation = plcHealth.mode === 'VIRTUAL';
 
@@ -154,7 +156,7 @@ export const IOView: React.FC = () => {
         </span>
       </div>
 
-      <ModeBanner />
+      <ConnectionStrip protocol={deviceConfig.protocol} />
 
       {/* Document tabs */}
       <div className="flex overflow-x-auto border-b border-slate-400 bg-slate-200 px-1 pt-1 dark:border-slate-600 dark:bg-slate-800">
@@ -175,16 +177,7 @@ export const IOView: React.FC = () => {
       </div>
 
       <div className="space-y-2 p-2">
-      {/* Screen 1: PLC Overview */}
-      {activeTab === 'overview' && (
-        <PlcOverviewTab
-          device={deviceConfig}
-          modules={hardwareModules}
-          tags={tags}
-          onUpdateDevice={handleUpdateDevice}
-          onNavigateTab={(tabKey) => setActiveTab(tabKey as any)}
-        />
-      )}
+      {activeTab === 'mapping' && <IoMappingTab tags={tags} onUpdateTag={handleUpdateTag} />}
 
       {/* Screen 2: Hardware Configuration */}
       {activeTab === 'hardware' && (
@@ -193,7 +186,10 @@ export const IOView: React.FC = () => {
 
       {/* Screen 3: Ladder Logic View */}
       {activeTab === 'ladder' && (
-        <LadderLogicTab tags={tags} />
+        <>
+          <div className="border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs text-amber-900">Read-only. Ladder program integration is not configured: the logic below is AquaTwin sample/virtual logic, not the plant program. Use Mitsubishi GX Works for PLC program changes.</div>
+          <LadderLogicTab tags={tags} />
+        </>
       )}
 
       {/* Screen 4: I/O Monitoring */}
