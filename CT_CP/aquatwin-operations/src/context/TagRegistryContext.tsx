@@ -17,7 +17,12 @@ interface Ctx {
   /** Numeric tag history for this browser session (not persisted). */
   history: Record<string, TagSample[]>;
   source: 'VIRTUAL' | 'REAL';
+  /** Command a DO/AO tag. Virtual PLC only; drives the plant simulation. */
+  writeTag: (id: string, value: number | boolean) => WriteResult;
+  /** Force (override) a DI/AI value for simulation, or release it with null. */
+  forceTag: (id: string, value: number | boolean | null) => WriteResult;
 }
+export interface WriteResult { ok: boolean; message: string }
 
 const TagRegistry = createContext<Ctx | undefined>(undefined);
 export const useTags = () => {
@@ -30,7 +35,7 @@ const HISTORY_MAX = 900;
 const now = () => new Date().toLocaleTimeString();
 
 export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { telemetry } = usePlant();
+  const { telemetry, togglePump, setXv101Opening, setPumpSpeed } = usePlant();
   const { plcHealth } = useRuntimeMode();
   const source = plcHealth.mode;
   const [tags, setTags] = useState<ExtendedPlcTag[]>(INITIAL_EXTENDED_TAGS);
@@ -45,6 +50,8 @@ export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       FT101_FLOW: [t.p101_flowM3h, 25, 1],
       PT101_PRESSURE: [t.p101_pressureBar, 6, 2],
       RO_FEED_PRESS: [t.p202_pressureBar, 25, 1],
+      FCV101_POS_CMD: [t.xv101_openingPercent, 100, 1],
+      P201_VFD_SPEED: [t.p201_speedPercent === undefined ? undefined : t.p201_speedPercent * 0.6, 60, 1],
     };
     const bool: Record<string, boolean> = {
       P101_RUN_FB: t.p101_running, P101_RUN_CMD: t.p101_running,
@@ -52,6 +59,7 @@ export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ c
       XV101_OPEN_FB: (t.xv101_openingPercent ?? 100) > 10, XV101_OPEN_CMD: (t.xv101_openingPercent ?? 100) > 10,
     };
     setTags((prev) => prev.map((tag) => {
+      if (tag.forced || tag.fault) return tag; // forced / faulted values are held by the user
       const n = num[tag.id];
       if (n && n[0] !== undefined)
         return { ...tag, currentValue: Number(n[0].toFixed(n[2])), rawCounts: Math.round((n[0] / n[1]) * 32000), lastUpdate: now() };
@@ -72,6 +80,40 @@ export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     });
   }, [source]);
 
+  const setValue = (id: string, value: number | boolean | string, extra: Partial<ExtendedPlcTag> = {}) =>
+    setTags((prev) => prev.map((t) => (t.id === id ? { ...t, currentValue: value, lastUpdate: now(), ...extra } : t)));
+
+  const writeTag = (id: string, value: number | boolean): WriteResult => {
+    const tag = tags.find((t) => t.id === id);
+    if (!tag) return { ok: false, message: `Unknown tag ${id}` };
+    if (source !== 'VIRTUAL') return { ok: false, message: 'Real PLC is read-only: write refused. Nothing was sent.' };
+    if (tag.type !== 'DO' && tag.type !== 'AO') return { ok: false, message: `${id} is an input; use Force to simulate it.` };
+    if (tag.fault) return { ok: false, message: `${id} has an active fault.` };
+    const on = value === true || (typeof value === 'number' && value > 0);
+    // ponytail: tag -> plant mapping is a sample table; extend when the real I/O list exists.
+    switch (id) {
+      case 'P101_RUN_CMD': if (telemetry.p101_running !== on) togglePump('P-101'); break;
+      case 'P201_RUN_CMD': if (telemetry.p201_running !== on) togglePump('P-201'); break;
+      case 'XV101_OPEN_CMD': setXv101Opening(on ? 100 : 0); break;
+      case 'FCV101_POS_CMD': setXv101Opening(Number(value)); break;
+      case 'P201_VFD_SPEED': setPumpSpeed('P-201', (Number(value) / 60) * 100); break;
+      case 'ALARM_HORN_CMD': setValue(id, on); return { ok: true, message: `${id} = ${on ? 'ON' : 'OFF'} (no plant equipment mapped).` };
+      default: return { ok: false, message: `${id} has no plant equipment mapped.` };
+    }
+    setValue(id, typeof value === 'boolean' ? value : Number(value));
+    return { ok: true, message: `${id} = ${String(value)} written to Virtual PLC (SIMULATED). Check the matching feedback tag for the actual state.` };
+  };
+
+  const forceTag = (id: string, value: number | boolean | null): WriteResult => {
+    const tag = tags.find((t) => t.id === id);
+    if (!tag) return { ok: false, message: `Unknown tag ${id}` };
+    if (source !== 'VIRTUAL') return { ok: false, message: 'Forcing is only available on the Virtual PLC.' };
+    if (tag.type !== 'DI' && tag.type !== 'AI') return { ok: false, message: 'Only inputs can be forced; command outputs with Write.' };
+    if (value === null) { setValue(id, tag.currentValue, { forced: false }); return { ok: true, message: `${id} released; following the plant again.` }; }
+    setValue(id, value, { forced: true });
+    return { ok: true, message: `${id} forced to ${String(value)} (SIMULATED input; the plant model does not see it).` };
+  };
+
   // Session history sampler (one timer for the whole app).
   const latest = useRef(tags);
   latest.current = tags;
@@ -89,5 +131,5 @@ export const TagRegistryProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => clearInterval(id);
   }, [source]);
 
-  return <TagRegistry.Provider value={{ tags, setTags, history, source }}>{children}</TagRegistry.Provider>;
+  return <TagRegistry.Provider value={{ tags, setTags, history, source, writeTag, forceTag }}>{children}</TagRegistry.Provider>;
 };

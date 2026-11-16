@@ -101,23 +101,13 @@ export const IOView: React.FC = () => {
     });
   };
 
-  const handleToggleForce = (tagId: string) => {
-    setTags((prev) =>
-      prev.map((t) => {
-        if (t.id === tagId) {
-          return { ...t, forced: !t.forced };
-        }
-        return t;
-      })
-    );
-    handleAddLog({
-      type: 'OUTPUT',
-      level: 'WARN',
-      source: 'FORCE_TABLE',
-      tagId,
-      text: `Toggled manual force state on tag "${tagId}"`,
-    });
+  const { writeTag, forceTag } = useTags();
+  const logResult = (tagId: string, type: 'OUTPUT' | 'VALUE', r: { ok: boolean; message: string }) => {
+    handleAddLog({ type, level: r.ok ? 'INFO' : 'WARN', source: type === 'OUTPUT' ? 'WRITE' : 'FORCE_TABLE', tagId, text: r.message });
+    return r;
   };
+  const handleWrite = (tagId: string, value: number | boolean) => logResult(tagId, 'OUTPUT', writeTag(tagId, value));
+  const handleForce = (tagId: string, value: number | boolean | null) => logResult(tagId, 'VALUE', forceTag(tagId, value));
 
   const handleAddLog = (msg: Omit<TerminalLogMessage, 'id' | 'timestamp'>) => {
     const newLog: TerminalLogMessage = {
@@ -211,7 +201,9 @@ export const IOView: React.FC = () => {
         <LiveMonitorTab
           tags={tags}
           onToggleFault={handleToggleFault}
-          onToggleForce={handleToggleForce}
+          onWrite={handleWrite}
+          onForce={handleForce}
+          simulation={plcHealth.mode === 'VIRTUAL'}
         />
       )}
 

@@ -24,14 +24,22 @@ import {
 interface LiveMonitorTabProps {
   tags: ExtendedPlcTag[];
   onToggleFault: (tagId: string) => void;
-  onToggleForce: (tagId: string) => void;
+  onWrite: (tagId: string, value: number | boolean) => { ok: boolean; message: string };
+  onForce: (tagId: string, value: number | boolean | null) => { ok: boolean; message: string };
+  simulation: boolean;
 }
 
 export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
   tags,
   onToggleFault,
-  onToggleForce,
+  onWrite,
+  onForce,
+  simulation,
 }) => {
+  const [notice, setNotice] = useState<{ ok: boolean; message: string } | null>(null);
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const run = (r: { ok: boolean; message: string }) => setNotice(r);
+  const small = 'rounded border border-slate-300 px-2 py-0.5 text-[10px] enabled:hover:bg-slate-100 disabled:opacity-40 dark:border-slate-600 dark:enabled:hover:bg-slate-800';
   const [activeTab, setActiveTab] = useState<'DI' | 'DO' | 'AI' | 'AO'>('DI');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [refreshIntervalMs, setRefreshIntervalMs] = useState<number>(1000);
@@ -157,6 +165,7 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
       {/* Main Table matching exact columns in user screenshot:
           Channel | Tag Name | Device | Value | Status | Last Update */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        {notice && <div role="status" className={`border-b px-4 py-1.5 text-xs ${notice.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>{notice.message}</div>}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs font-mono">
             <thead className="bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
@@ -278,17 +287,43 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
                           {tag.fault !== null ? 'Fault Active' : 'Fault'}
                         </button>
 
-                        <button
-                          onClick={() => onToggleForce(tag.id)}
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono transition border ${
-                            tag.forced
-                              ? 'bg-amber-500 text-black border-amber-600 font-bold'
-                              : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:text-slate-800'
-                          }`}
-                          title="Force / override tag value"
-                        >
-                          {tag.forced ? 'Forced' : 'Force'}
-                        </button>
+                        {(tag.type === 'DO' || tag.type === 'AO') && (
+                          <>
+                            {tag.type === 'DO' ? (
+                              <button disabled={!simulation} title={simulation ? 'Command this output' : 'Real PLC is read-only'} className={small}
+                                onClick={() => run(onWrite(tag.id, tag.currentValue !== true))}>
+                                {tag.currentValue === true ? 'Write OFF' : 'Write ON'}
+                              </button>
+                            ) : (
+                              <>
+                                <input type="number" disabled={!simulation} value={draft[tag.id] ?? ''} placeholder={String(tag.currentValue)}
+                                  onChange={(e) => setDraft((d) => ({ ...d, [tag.id]: e.target.value }))}
+                                  className="w-16 rounded border border-slate-300 bg-white px-1 py-0.5 text-[10px] dark:border-slate-600 dark:bg-slate-800" />
+                                <button disabled={!simulation || draft[tag.id] === undefined || draft[tag.id] === ''} className={small}
+                                  onClick={() => run(onWrite(tag.id, Number(draft[tag.id])))}>Write</button>
+                              </>
+                            )}
+                          </>
+                        )}
+                        {(tag.type === 'DI' || tag.type === 'AI') && (
+                          <>
+                            {tag.forced && tag.type === 'DI' && (
+                              <button disabled={!simulation} className={small} onClick={() => run(onForce(tag.id, tag.currentValue !== true))}>
+                                Set {tag.currentValue === true ? 'OFF' : 'ON'}
+                              </button>
+                            )}
+                            {tag.forced && tag.type === 'AI' && (
+                              <input type="number" step="any" defaultValue={String(tag.currentValue)} disabled={!simulation}
+                                onBlur={(e) => e.target.value !== '' && run(onForce(tag.id, Number(e.target.value)))}
+                                className="w-16 rounded border border-slate-300 bg-white px-1 py-0.5 text-[10px] dark:border-slate-600 dark:bg-slate-800" />
+                            )}
+                            <button disabled={!simulation} title={simulation ? 'Force / release this simulated input' : 'Real PLC is read-only'}
+                              className={`${small} ${tag.forced ? '!border-amber-600 !bg-amber-500 font-bold !text-black' : ''}`}
+                              onClick={() => run(onForce(tag.id, tag.forced ? null : typeof tag.currentValue === 'boolean' ? tag.currentValue : Number(tag.currentValue)))}>
+                              {tag.forced ? 'Forced' : 'Force'}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
