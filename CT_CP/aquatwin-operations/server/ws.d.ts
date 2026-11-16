@@ -25,3 +25,4 @@ declare module 'ws' {
     close(cb?: (err?: Error) => void): void;
   }
 }
+

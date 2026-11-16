@@ -27,3 +27,4 @@ export interface IPLCDriver {
 
   ping(): Promise<{ success: boolean; latencyMs: number; message: string }>;
 }
+

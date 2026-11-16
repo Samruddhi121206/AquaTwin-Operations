@@ -11,7 +11,7 @@ import { SimulatedBadge } from '../../components/shared/SimulatedBadge';
 import { plcBackend } from '../../services/plcBackendService';
 
 import { PlcOverviewTab } from './tabs/PlcOverviewTab';
-import { HardwareConfigTab } from './tabs/HardwareConfigTab';
+import { HardwareConfigurationView } from './hardware/HardwareConfigurationView';
 import { LadderLogicTab } from './tabs/LadderLogicTab';
 import { LiveMonitorTab } from './tabs/LiveMonitorTab';
 import { PlcTerminalTab } from './tabs/PlcTerminalTab';
@@ -366,12 +366,7 @@ export const IOView: React.FC = () => {
 
       {/* Screen 2: Hardware Configuration */}
       {activeTab === 'hardware' && (
-        <HardwareConfigTab
-          modules={hardwareModules}
-          tags={tags}
-          onUpdateModules={setHardwareModules}
-          onUpdateTag={handleUpdateTag}
-        />
+        <HardwareConfigurationView device={deviceConfig} />
       )}
 
       {/* Screen 3: Ladder Logic View */}
