@@ -8,7 +8,7 @@ import { useRuntimeMode } from '../../context/RuntimeModeContext';
 import { usePlant } from '../../context/PlantContext';
 import { ModeBanner } from '../../components/shared/ModeBanner';
 import { SimulatedBadge } from '../../components/shared/SimulatedBadge';
-import { plcBackend } from '../../services/plcBackendService';
+import { useTags } from '../../context/TagRegistryContext';
 
 import { PlcOverviewTab } from './tabs/PlcOverviewTab';
 import { HardwareConfigurationView } from './hardware/HardwareConfigurationView';
@@ -20,7 +20,6 @@ import { DiagnosticsTab } from './tabs/DiagnosticsTab';
 import {
   INITIAL_PLC_DEVICE,
   INITIAL_MODULES,
-  INITIAL_EXTENDED_TAGS,
   INITIAL_TERMINAL_LOGS,
 } from './ioData';
 import {
@@ -54,103 +53,8 @@ export const IOView: React.FC = () => {
 
   const [deviceConfig, setDeviceConfig] = useState<PlcDeviceConfig>(INITIAL_PLC_DEVICE);
   const [hardwareModules, setHardwareModules] = useState<PlcHardwareModule[]>(INITIAL_MODULES);
-  const [tags, setTags] = useState<ExtendedPlcTag[]>(INITIAL_EXTENDED_TAGS);
+  const { tags, setTags } = useTags();
   const [terminalLogs, setTerminalLogs] = useState<TerminalLogMessage[]>(INITIAL_TERMINAL_LOGS);
-
-  // Synchronize unified plant telemetry into PLC tags
-  useEffect(() => {
-    setTags((prev) =>
-      prev.map((tag) => {
-        if (tag.id === 'TK101_LEVEL') {
-          const lvl = telemetry.tk101?.currentLevelPercent ?? 65.2;
-          return {
-            ...tag,
-            currentValue: Number(lvl.toFixed(1)),
-            rawCounts: Math.round((lvl / 100) * 32000),
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        if (tag.id === 'FT101_FLOW') {
-          const flow = telemetry.p101_flowM3h ?? 12.5;
-          return {
-            ...tag,
-            currentValue: Number(flow.toFixed(1)),
-            rawCounts: Math.round((flow / 25) * 32000),
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        if (tag.id === 'PT101_PRESSURE') {
-          const press = telemetry.p101_pressureBar ?? 3.2;
-          return {
-            ...tag,
-            currentValue: Number(press.toFixed(2)),
-            rawCounts: Math.round((press / 6) * 32000),
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        if (tag.id === 'RO_FEED_PRESS') {
-          const roPress = telemetry.p202_pressureBar ?? 15.4;
-          return {
-            ...tag,
-            currentValue: Number(roPress.toFixed(1)),
-            rawCounts: Math.round((roPress / 25) * 32000),
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        if (tag.id === 'P101_RUN_FB' || tag.id === 'P101_RUN_CMD') {
-          return {
-            ...tag,
-            currentValue: telemetry.p101_running,
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        if (tag.id === 'P201_RUN_FB' || tag.id === 'P201_RUN_CMD') {
-          return {
-            ...tag,
-            currentValue: telemetry.p201_running,
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        if (tag.id === 'XV101_OPEN_FB' || tag.id === 'XV101_OPEN_CMD') {
-          const isOpen = (telemetry.xv101_openingPercent ?? 100) > 10;
-          return {
-            ...tag,
-            currentValue: isOpen,
-            lastUpdate: new Date().toLocaleTimeString(),
-          };
-        }
-        return tag;
-      })
-    );
-  }, [telemetry]);
-
-  // Connect to backend WebSocket gateway for real/virtual PLC telemetry
-  useEffect(() => {
-    plcBackend.connect();
-    const unsubscribe = plcBackend.subscribe((packet) => {
-      if (packet.readings && packet.readings.length > 0) {
-        setTags((prev) =>
-          prev.map((tag) => {
-            const match = packet.readings.find(
-              (r) => r.tagId === tag.id || r.address === tag.address
-            );
-            if (match) {
-              return {
-                ...tag,
-                currentValue: match.value,
-                rawCounts: match.rawCounts ?? tag.rawCounts,
-                quality: match.quality as any,
-                lastUpdate: match.timestamp,
-              };
-            }
-            return tag;
-          })
-        );
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const handleUpdateDevice = (updated: Partial<PlcDeviceConfig>) => {
     setDeviceConfig((prev) => {
@@ -238,121 +142,49 @@ export const IOView: React.FC = () => {
     diagnostics: 'Connection & Diagnostics',
   };
 
+  const TABS: { key: typeof activeTab; label: string; icon: React.ElementType }[] = [
+    { key: 'overview', label: 'PLC Overview', icon: Cpu },
+    { key: 'hardware', label: 'Hardware Configuration', icon: Layers },
+    { key: 'ladder', label: 'Ladder Logic View', icon: FileCode },
+    { key: 'monitor', label: 'I/O Monitoring', icon: Activity },
+    { key: 'terminal', label: 'PLC Terminal', icon: TerminalIcon },
+    { key: 'diagnostics', label: 'Connection & Diagnostics', icon: ShieldCheck },
+  ];
+  const simulation = plcHealth.mode === 'VIRTUAL';
+
   return (
-    <div className="space-y-4">
-      {/* Top Application Breadcrumb & Plant Status Bar matching screenshot */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-5 py-3 shadow-xs">
-        {/* Left: Input / Output > Subscreen Title */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-mono text-slate-500">Input / Output</span>
-          <span className="text-slate-400 font-mono">&gt;</span>
-          <span className="text-sm font-bold text-slate-900 dark:text-slate-100 font-mono tracking-tight">
-            {tabTitleMap[activeTab]}
-          </span>
-        </div>
-
-        {/* Right Status: Plant Online & Operator */}
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-            <span className="font-bold text-slate-800 dark:text-slate-200">Plant Online</span>
-          </div>
-
-          <div className="h-4 w-px bg-slate-200 dark:border-slate-800" />
-
-          <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
-            <User className="w-3.5 h-3.5" />
-            <span className="font-medium">Operator</span>
-          </div>
-        </div>
+    <div className="space-y-0 border border-slate-400 bg-slate-100 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+      {/* GX Works3-style title bar */}
+      <div className="flex flex-wrap items-center gap-3 bg-gradient-to-b from-[#1b4f9c] to-[#0f3a7a] px-3 py-1.5 text-xs text-white">
+        <span className="font-bold">AquaTwin Engineering</span>
+        <span className="opacity-60">|</span>
+        <span>Input / Output - {tabTitleMap[activeTab]}</span>
+        <span className="ml-auto flex items-center gap-1.5 rounded-sm bg-white/15 px-2 py-0.5 font-semibold">
+          <Radio className="h-3 w-3" />{simulation ? 'Virtual PLC (SIMULATION)' : 'Real PLC (read-only)'}
+        </span>
       </div>
 
-      {/* Safety Mode Banner */}
       <ModeBanner />
 
-      {/* 6 Workspace Navigation Tabs matching user reference */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-1.5 shadow-sm overflow-x-auto">
-        <div className="flex items-center gap-1 min-w-max text-xs font-mono">
-          {/* Tab 1: PLC Overview */}
+      {/* Document tabs */}
+      <div className="flex overflow-x-auto border-b border-slate-400 bg-slate-200 px-1 pt-1 dark:border-slate-600 dark:bg-slate-800">
+        {TABS.map(({ key, label, icon: Icon }) => (
           <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-3.5 py-2 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'overview'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+            key={key}
+            onClick={() => setActiveTab(key)}
+            className={`flex items-center gap-1.5 whitespace-nowrap border border-b-0 px-3 py-1.5 text-xs ${
+              activeTab === key
+                ? 'border-slate-400 bg-white font-semibold text-[#0f3a7a] dark:border-slate-600 dark:bg-slate-900 dark:text-blue-300'
+                : 'border-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
             }`}
           >
-            <Cpu className="w-3.5 h-3.5" />
-            <span>1. PLC Overview</span>
+            <Icon className="h-3.5 w-3.5" />
+            {label}
           </button>
-
-          {/* Tab 2: Hardware Configuration */}
-          <button
-            onClick={() => setActiveTab('hardware')}
-            className={`px-3.5 py-2 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'hardware'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>2. Hardware Configuration</span>
-          </button>
-
-          {/* Tab 3: Ladder Logic View */}
-          <button
-            onClick={() => setActiveTab('ladder')}
-            className={`px-3.5 py-2 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'ladder'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <FileCode className="w-3.5 h-3.5" />
-            <span>3. Ladder Logic View</span>
-          </button>
-
-          {/* Tab 4: I/O Monitoring */}
-          <button
-            onClick={() => setActiveTab('monitor')}
-            className={`px-3.5 py-2 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'monitor'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>4. I/O Monitoring</span>
-          </button>
-
-          {/* Tab 5: PLC Terminal */}
-          <button
-            onClick={() => setActiveTab('terminal')}
-            className={`px-3.5 py-2 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'terminal'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <TerminalIcon className="w-3.5 h-3.5" />
-            <span>5. PLC Terminal</span>
-          </button>
-
-          {/* Tab 6: Connection & Diagnostics */}
-          <button
-            onClick={() => setActiveTab('diagnostics')}
-            className={`px-3.5 py-2 font-medium rounded-lg transition flex items-center gap-2 whitespace-nowrap ${
-              activeTab === 'diagnostics'
-                ? 'bg-indigo-600 text-white shadow-xs font-bold'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>6. Connection & Diagnostics</span>
-          </button>
-        </div>
+        ))}
       </div>
 
+      <div className="space-y-2 p-2">
       {/* Screen 1: PLC Overview */}
       {activeTab === 'overview' && (
         <PlcOverviewTab
@@ -398,6 +230,7 @@ export const IOView: React.FC = () => {
       {activeTab === 'diagnostics' && (
         <DiagnosticsTab device={deviceConfig} tags={tags} />
       )}
+      </div>
     </div>
   );
 };

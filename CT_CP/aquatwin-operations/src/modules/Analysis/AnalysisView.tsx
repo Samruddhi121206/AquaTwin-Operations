@@ -9,6 +9,7 @@ import { ModeBanner } from '../../components/shared/ModeBanner';
 import { WaterQualityView } from '../../components/modules/WaterQuality/WaterQualityView';
 import { EnergyView } from '../../components/modules/EnergyPerformance/EnergyView';
 import { ReportsView } from '../../components/modules/ReportsAnalytics/ReportsView';
+import { RecordedTrend } from './RecordedTrend';
 import { generateProcessTrends, ProcessTrendPoint } from './sampleData';
 import {
   BarChart3,
@@ -249,6 +250,7 @@ export const AnalysisView: React.FC = () => {
       </div>
 
       {/* Tab 1: Process Trends — PHASE 4: 2-COLUMN HALF-GRAPH + INFO PANEL */}
+      {analysisTab === 'trends' && <RecordedTrend />}
       {analysisTab === 'trends' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           {/* Left Column: Half-Graph (55% width -> col-span-12 lg:col-span-7) */}

@@ -5,6 +5,14 @@
 
 import React, { useState } from 'react';
 import { INITIAL_IO_CHANNELS } from './panelData';
+import { useTags } from '../../../context/TagRegistryContext';
+
+// Panel channel tag -> shared registry tag. Linked only when units agree (else shown as sample data).
+const LINK: Record<string, string> = {
+  'P101.FLOW': 'FT101_FLOW', 'P101.PRESS': 'PT101_PRESSURE', 'RO.FEED_PRESS': 'RO_FEED_PRESS', 'RO.PERM_FLOW': 'RO_PERM_FLOW',
+  'TK101.LEVEL': 'TK101_LEVEL', 'P101.RUN_FB': 'P101_RUN_FB', 'P101.TRIP_FB': 'P101_TRIP', 'P201.RUN_FB': 'P201_RUN_FB',
+  'XV101.OPEN_FB': 'XV101_OPEN_FB', 'P101.RUN_CMD': 'P101_RUN_CMD', 'P201.RUN_CMD': 'P201_RUN_CMD',
+};
 import { IOChannel, IOChannelType } from '../../../types/io';
 import { QualityIcon } from '../../shared/QualityIcon';
 import { SimulatedBadge } from '../../shared/SimulatedBadge';
@@ -22,7 +30,13 @@ import {
 } from 'lucide-react';
 
 export const IoMonitoring: React.FC = () => {
-  const [channels, setChannels] = useState<IOChannel[]>(INITIAL_IO_CHANNELS);
+  const [base, setChannels] = useState<IOChannel[]>(INITIAL_IO_CHANNELS);
+  const { tags } = useTags();
+  const channels = base.map((ch) => {
+    const t = tags.find((x) => x.id === LINK[ch.tagId]);
+    const sameKind = t && typeof t.currentValue === typeof ch.scaledValue && (typeof ch.scaledValue === 'boolean' || t.scaling.unit === ch.engUnit);
+    return sameKind && ch.fault === null ? { ...ch, scaledValue: t.currentValue as number | boolean, rawCount: t.rawCounts ?? ch.rawCount, lastUpdate: t.lastUpdate } : ch;
+  });
   const [selectedType, setSelectedType] = useState<string>('ALL');
   const [selectedModule, setSelectedModule] = useState<string>('ALL');
   const [faultOnly, setFaultOnly] = useState<boolean>(false);

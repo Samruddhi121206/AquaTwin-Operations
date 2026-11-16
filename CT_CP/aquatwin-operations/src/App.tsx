@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { PlantProvider, usePlant } from './context/PlantContext';
 import { RuntimeModeProvider } from './context/RuntimeModeContext';
+import { TagRegistryProvider } from './context/TagRegistryContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { LandingPage } from './components/layout/LandingPage';
@@ -158,7 +159,9 @@ export default function App() {
   return (
     <RuntimeModeProvider>
       <PlantProvider>
-        <AppShell />
+        <TagRegistryProvider>
+          <AppShell />
+        </TagRegistryProvider>
       </PlantProvider>
     </RuntimeModeProvider>
   );

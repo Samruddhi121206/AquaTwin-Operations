@@ -134,7 +134,7 @@ export const PlcOverviewTab: React.FC<PlcOverviewTabProps> = ({
               <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800">
                 <span className="text-slate-500">IP Address</span>
                 <span className="font-mono text-cyan-600 dark:text-cyan-400">
-                  : {device.host}
+                  : {plcHealth.mode === 'VIRTUAL' ? 'n/a (simulation)' : `${device.host} (configured)`}
                 </span>
               </div>
 
@@ -161,7 +161,7 @@ export const PlcOverviewTab: React.FC<PlcOverviewTabProps> = ({
                     isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
                   }`}
                 />
-                {isConnected ? 'Connected' : 'Disconnected'}
+                {plcHealth.mode === 'VIRTUAL' ? 'Simulation active' : 'Link unverified'}
               </span>
             </div>
           </div>
@@ -280,7 +280,7 @@ export const PlcOverviewTab: React.FC<PlcOverviewTabProps> = ({
               12:34:56 PM
             </div>
             <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono mt-0.5">
-              Cycle: {device.scanTimeMs} ms • Healthy
+              Cycle: {plcHealth.mode === 'VIRTUAL' ? 'simulated' : 'not measured'}
             </div>
           </div>
         </div>
@@ -296,7 +296,7 @@ export const PlcOverviewTab: React.FC<PlcOverviewTabProps> = ({
               Good
             </div>
             <div className="text-[10px] text-slate-500 font-mono mt-0.5">
-              0 Communication Errors • Frame 3E Validated
+              {plcHealth.mode === 'VIRTUAL' ? 'Simulated data' : 'No verified read yet'}
             </div>
           </div>
         </div>
