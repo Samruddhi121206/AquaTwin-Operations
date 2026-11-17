@@ -5,18 +5,27 @@
 
 import React from 'react';
 import { useRuntimeMode } from '../../context/RuntimeModeContext';
+import { usePlcGateway } from '../../services/plcBackendService';
 import { Cpu, ShieldAlert, CheckCircle, Wifi, Lock, Unlock } from 'lucide-react';
 
 export const ModeBanner: React.FC = () => {
   const { plcHealth, setMode, toggleReadOnly } = useRuntimeMode();
+  const gateway = usePlcGateway();
 
   const isVirtual = plcHealth.mode === 'VIRTUAL';
   const isReadOnly = plcHealth.readOnly;
 
+  // A real link counts only once the backend reports a protocol-verified session.
+  const realVerified =
+    gateway.status?.mode === 'REAL' &&
+    gateway.status?.connected === true &&
+    gateway.status?.protocolVerified === true;
+  const realUnverified = !isVirtual && !realVerified;
+
   return (
     <div
       className={`flex flex-wrap items-center justify-between gap-3 px-3 py-1.5 rounded-lg border text-xs font-mono transition-colors ${
-        isVirtual
+        isVirtual || realUnverified
           ? 'bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-200'
           : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-200'
       }`}
@@ -24,17 +33,27 @@ export const ModeBanner: React.FC = () => {
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5 font-bold tracking-wide">
           <Cpu className="w-3.5 h-3.5" />
-          <span>{isVirtual ? 'VIRTUAL PLC · SIMULATION' : 'REAL PLC · HARDWARE'}</span>
+          <span>
+            {isVirtual
+              ? 'VIRTUAL PLC · SIMULATION'
+              : realUnverified
+                ? 'Real PLC: not connected'
+                : 'REAL PLC · HARDWARE'}
+          </span>
         </div>
         <span className="opacity-50">•</span>
         <span className="text-[11px] font-sans opacity-85">
           {plcHealth.protocol} ({plcHealth.ipAddress})
         </span>
-        <span className="opacity-50">•</span>
-        <div className="flex items-center gap-1 text-[11px]">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Scan: {plcHealth.latencyMs}ms</span>
-        </div>
+        {!realUnverified && (
+          <>
+            <span className="opacity-50">•</span>
+            <div className="flex items-center gap-1 text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Scan: {plcHealth.latencyMs}ms</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
@@ -59,8 +78,13 @@ export const ModeBanner: React.FC = () => {
           </button>
           <button
             onClick={toggleReadOnly}
-            className="px-2 py-0.5 text-[11px] font-medium rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title="Toggle Read-Only or Control command allowance"
+            disabled={!isVirtual}
+            className="px-2 py-0.5 text-[11px] font-medium rounded bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900"
+            title={
+              isVirtual
+                ? 'Toggle Read-Only or Control command allowance'
+                : 'Writes are disabled in REAL mode'
+            }
           >
             {isReadOnly ? 'Enable Writes' : 'Lock Read-Only'}
           </button>

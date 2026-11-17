@@ -113,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Collapsible Sidebar Container */}
       <aside
-        className={`fixed lg:relative inset-y-0 left-0 z-50 flex flex-col h-screen bg-[#0a1128] border-r border-[#162544] text-slate-200 select-none shadow-2xl transition-all duration-300 ease-in-out ${
+        className={`fixed lg:relative inset-y-0 left-0 z-50 flex flex-col h-screen nav-surface nav-border-r select-none shadow-2xl transition-all duration-300 ease-in-out ${
           isOpen
             ? 'w-64 translate-x-0 opacity-100'
             : 'w-0 -translate-x-full lg:w-0 opacity-0 pointer-events-none'
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="w-64 h-full flex flex-col shrink-0 justify-between">
           <div>
             {/* Brand Header */}
-            <div className="p-4 border-b border-[#162544] flex items-center justify-between bg-[#080e22]">
+            <div className="nav-surface p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--nav-border)' }}>
               <div
                 onClick={onToggle}
                 className="flex items-center gap-3 cursor-pointer group select-none"
@@ -132,10 +132,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Droplets className="w-5 h-5 text-cyan-400" />
                 </div>
                 <div>
-                  <h1 className="text-base font-bold tracking-tight text-white leading-tight">
+                  <h1 className="nav-text text-base font-bold tracking-tight leading-tight">
                     AquaTwin
                   </h1>
-                  <p className="text-[11px] text-sky-300/70 font-medium">
+                  <p className="nav-muted text-[11px] font-medium">
                     4-Module Operations Platform
                   </p>
                 </div>
@@ -143,17 +143,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#132247] transition border border-transparent hover:border-[#1e3366] cursor-pointer"
+                className="nav-item p-1.5 rounded-lg transition border border-transparent cursor-pointer"
                 title="Close sidebar"
                 aria-label="Close sidebar"
               >
-                <PanelLeftClose className="w-4 h-4 text-sky-300/80" />
+                <PanelLeftClose className="w-4 h-4" />
               </button>
             </div>
 
             {/* Primary Navigation List */}
             <nav className="p-3 space-y-1.5 overflow-y-auto">
-              <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-sky-400/60 font-mono">
+              <div className="nav-muted px-3 py-1 text-[10px] font-bold uppercase tracking-wider font-mono">
                 Main Modules
               </div>
 
@@ -174,22 +174,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={() => handleNavClick(item.id)}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all group cursor-pointer ${
                       isSelected
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                        : 'text-slate-300 hover:bg-[#132247] hover:text-white border border-transparent'
+                        ? 'nav-item-active font-semibold border border-transparent'
+                        : 'nav-item border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Icon
                         className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-110 ${
                           isSelected
-                            ? 'text-cyan-400'
-                            : 'text-sky-300/80 group-hover:text-cyan-300'
+                            ? ''
+                            : ''
                         }`}
                       />
                       <div className="text-left">
                         <span className="block leading-tight">
                           {item.number && (
-                            <span className="font-mono text-[10px] opacity-75 mr-1.5 text-sky-400">
+                            <span className="font-mono text-[10px] opacity-75 mr-1.5">
                               {item.number}.
                             </span>
                           )}
@@ -202,8 +202,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <span
                         className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                           isSelected
-                            ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40'
-                            : 'bg-[#121f42] text-sky-300 border border-[#1e3366]'
+                            ? 'raised border'
+                            : 'nav-muted border'
                         }`}
                       >
                         {item.badge}
@@ -218,7 +218,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div>
             {/* Phase 5: Hide Simulation Tick from Platform Overview (landing) */}
             {activeModule !== 'landing' && (
-              <div className="p-3 mx-3 mb-3 bg-[#0d1733] rounded-xl border border-[#182a52] text-xs shadow-inner">
+              <div className="p-3 mx-3 mb-3 rounded-xl border text-xs shadow-inner" style={{ backgroundColor: 'var(--nav-active-bg)', borderColor: 'var(--nav-border)' }}>
                 <div className="flex items-center justify-between mb-1.5">
                   <div className="flex items-center gap-1.5">
                     <div
@@ -228,40 +228,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           : 'bg-amber-400'
                       }`}
                     />
-                    <span className="text-[10px] font-bold text-slate-200 uppercase font-mono">
+                    <span className="nav-text text-[10px] font-bold uppercase font-mono">
                       {isSimulating ? 'SIMULATION TICK' : 'SIMULATION FROZEN'}
                     </span>
                   </div>
-                  <span className="text-[10px] text-sky-300/60 font-mono">1.0s</span>
+                  <span className="nav-muted text-[10px] font-mono">1.0s</span>
                 </div>
 
-                <div className="flex items-center justify-between gap-1 pt-2 border-t border-[#182a52]">
+                <div className="flex items-center justify-between gap-1 pt-2 border-t" style={{ borderColor: 'var(--nav-border)' }}>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={toggleSimulation}
                       title={isSimulating ? 'Pause Simulation' : 'Resume Simulation'}
-                      className="p-1.5 rounded bg-[#132247] hover:bg-[#1a2f61] text-slate-200 border border-[#1e3366] transition cursor-pointer"
+                      className="nav-item p-1.5 rounded border transition cursor-pointer" style={{ borderColor: 'var(--nav-border)' }}
                     >
-                      {isSimulating ? <Pause className="w-3 h-3 text-sky-300" /> : <Play className="w-3 h-3 text-emerald-400" />}
+                      {isSimulating ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3 text-emerald-400" />}
                     </button>
                     <button
                       onClick={resetSimulation}
                       title="Reset to Baseline"
-                      className="p-1.5 rounded bg-[#132247] hover:bg-[#1a2f61] text-slate-200 border border-[#1e3366] transition cursor-pointer"
+                      className="nav-item p-1.5 rounded border transition cursor-pointer" style={{ borderColor: 'var(--nav-border)' }}
                     >
-                      <RotateCcw className="w-3 h-3 text-sky-300" />
+                      <RotateCcw className="w-3 h-3" />
                     </button>
                   </div>
 
-                  <div className="flex items-center bg-[#091024] rounded p-0.5 border border-[#182a52]">
+                  <div className="nav-surface flex items-center rounded p-0.5 border" style={{ borderColor: 'var(--nav-border)' }}>
                     {[1, 2, 5].map((speed) => (
                       <button
                         key={speed}
                         onClick={() => setSimulationSpeed(speed)}
                         className={`px-1.5 py-0.5 text-[9px] font-mono rounded transition cursor-pointer ${
                           simulationSpeed === speed
-                            ? 'bg-cyan-500 text-slate-950 font-bold shadow-[0_0_8px_rgba(6,182,212,0.6)]'
-                            : 'text-slate-400 hover:text-white'
+                            ? 'btn-primary font-bold'
+                            : 'nav-item'
                         }`}
                       >
                         {speed}x
@@ -275,32 +275,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {/* Phase 4: Operator Profile Information Footer */}
             <div
               onClick={() => handleNavClick('profile')}
-              className={`p-3.5 bg-[#080d21] border-t border-[#162544] flex items-center justify-between cursor-pointer hover:bg-[#111c3d] transition-colors group ${
-                activeModule === 'profile' ? 'bg-[#111c3d] border-t-cyan-400' : ''
+              className={`nav-item p-3.5 border-t flex items-center justify-between cursor-pointer transition-colors group ${
+                activeModule === 'profile' ? 'nav-item-active' : ''
               }`}
               title="View Operator Profile"
             >
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-sm">
-                    <div className="w-full h-full rounded-full bg-[#0a1128] flex items-center justify-center text-xs font-bold text-white">
+                    <div className="nav-surface w-full h-full rounded-full flex items-center justify-center text-xs font-bold">
                       RS
                     </div>
                   </div>
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#080d21]" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border" style={{ borderColor: 'var(--bg-nav)' }} />
                 </div>
                 <div className="text-left">
-                  <div className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors flex items-center gap-1">
+                  <div className="nav-text text-xs font-bold transition-colors flex items-center gap-1">
                     <span>R. Sharma</span>
                   </div>
-                  <div className="text-[10px] text-sky-300/70 flex items-center gap-1">
+                  <div className="nav-muted text-[10px] flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-cyan-400" />
                     <span>Lead Process Eng</span>
                   </div>
                 </div>
               </div>
 
-              <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-all" />
             </div>
           </div>
         </div>

@@ -25,7 +25,7 @@ export const RuntimeModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
     ipAddress: '192.168.1.150',
     rack: 0,
     slot: 2,
-    firmware: 'SIMATIC S7-1515-2 PN v2.9.2',
+    firmware: 'Virtual PLC',
     lastHeartbeat: new Date().toLocaleTimeString(),
     latencyMs: 14,
     readOnly: true, // safe industrial default
@@ -37,16 +37,19 @@ export const RuntimeModeProvider: React.FC<{ children: React.ReactNode }> = ({ c
       ...prev,
       mode,
       protocol: mode === 'REAL' ? 'OPC_UA' : 'VIRTUAL_SCAN',
-      latencyMs: mode === 'REAL' ? 38 : 12,
-      // For real PLC, enforce read-only unless specifically unlocked
-      readOnly: mode === 'REAL' ? true : prev.readOnly,
+      latencyMs: mode === 'REAL' ? 0 : 12,
+      // Switching to REAL does not establish a link; the gateway must report a verified session first.
+      connected: mode === 'REAL' ? false : true,
+      connectionState: mode === 'REAL' ? 'DISCONNECTED' : 'CONNECTED',
+      readOnly: true,
     }));
   };
 
   const toggleReadOnly = () => {
     setPlcHealth((prev) => ({
       ...prev,
-      readOnly: !prev.readOnly,
+      // Writes are never unlocked against a real PLC from this UI.
+      readOnly: prev.mode === 'REAL' ? true : !prev.readOnly,
     }));
   };
 

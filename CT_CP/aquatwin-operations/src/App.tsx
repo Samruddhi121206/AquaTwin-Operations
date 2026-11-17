@@ -4,6 +4,8 @@
  */
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { AlarmToasts } from './components/shared/AlarmToasts';
 import { PlantProvider, usePlant } from './context/PlantContext';
 import { RuntimeModeProvider } from './context/RuntimeModeContext';
 import { TagRegistryProvider } from './context/TagRegistryContext';
@@ -35,21 +37,24 @@ const MainContent: React.FC = () => {
     activeModule === 'energy' ||
     activeModule === 'reports';
 
+  // Group key so sub-module deep links (e.g. plant -> alarms) do not remount the shared view.
+  const moduleGroupKey = isPlantModule ? 'plant' : isAnalysisModule ? 'analysis' : activeModule;
+
   return (
     <main
       className={`flex-1 overflow-y-auto ${
         isPlantModule ? 'p-3 md:p-4' : 'p-4 md:p-6'
-      } bg-slate-50 dark:bg-[#070e24] text-slate-900 dark:text-slate-100 transition-colors`}
+      } text-slate-900 dark:text-slate-100 transition-colors`}
     >
       <div className={`${isPlantModule ? 'max-w-[1720px]' : 'max-w-[1600px]'} mx-auto`}>
         {/* Connected Navigation Bar for Inner Modules */}
         {activeModule !== 'landing' && activeModule !== 'profile' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-slate-200 dark:border-[#162544] text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-3.5 pb-2.5 border-b border-slate-200 dark:border-navy text-xs">
             {/* Return to Platform Overview */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveModule('landing')}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-[#0d1a38] border border-slate-200 dark:border-[#1c3366] text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/40 font-semibold shadow-xs transition cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-navy border border-slate-200 dark:border-navy-soft text-slate-700 dark:text-slate-200 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-500/40 font-semibold shadow-xs transition cursor-pointer"
                 title="Return to Platform Overview"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
@@ -108,25 +113,35 @@ const MainContent: React.FC = () => {
           </div>
         )}
 
-        {activeModule === 'landing' && <LandingPage />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={moduleGroupKey}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            {activeModule === 'landing' && <LandingPage />}
 
-        {/* Module 1: Plant */}
-        {isPlantModule && <PlantView />}
+            {/* Module 1: Plant */}
+            {isPlantModule && <PlantView />}
 
-        {/* Module 2: Dedicated PLC Input / Output */}
-        {activeModule === 'io' && <IOView />}
+            {/* Module 2: Dedicated PLC Input / Output */}
+            {activeModule === 'io' && <IOView />}
 
-        {/* Module 3: Control Panel & Wiring */}
-        {activeModule === 'control_panel' && <ControlPanelView />}
+            {/* Module 3: Control Panel & Wiring */}
+            {activeModule === 'control_panel' && <ControlPanelView />}
 
-        {/* Module 4: Performance Trends, Water Quality, Energy & Reports */}
-        {isAnalysisModule && <AnalysisView />}
+            {/* Module 4: Performance Trends, Water Quality, Energy & Reports */}
+            {isAnalysisModule && <AnalysisView />}
 
-        {/* Settings & Audit */}
-        {activeModule === 'settings' && <SettingsView />}
+            {/* Settings & Audit */}
+            {activeModule === 'settings' && <SettingsView />}
 
-        {/* Phase 4: Dedicated Operator Profile Page */}
-        {activeModule === 'profile' && <ProfilePage />}
+            {/* Phase 4: Dedicated Operator Profile Page */}
+            {activeModule === 'profile' && <ProfilePage />}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </main>
   );
@@ -142,14 +157,15 @@ const AppShell: React.FC = () => {
 
   return (
     <div
-      className={`flex h-screen w-screen overflow-hidden ${
-        theme === 'dark' ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'
+      className={`app-surface flex h-screen w-screen overflow-hidden ${
+        theme === 'dark' ? 'dark text-slate-100' : 'text-slate-900'
       }`}
     >
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} onToggle={toggleSidebar} />
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden transition-all duration-300">
         <TopHeader onToggleSidebar={toggleSidebar} isSidebarOpen={sidebarOpen} />
         <MainContent />
+        <AlarmToasts />
       </div>
     </div>
   );

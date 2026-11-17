@@ -42,7 +42,7 @@ export const ProfilePage: React.FC = () => {
   return (
     <div className="max-w-[1200px] mx-auto py-2 px-1 sm:px-2 space-y-5">
       {/* Top Breadcrumb & Return Action */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#162544]">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-navy">
         <button
           onClick={() => setActiveModule('landing')}
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-sky-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition cursor-pointer"
@@ -57,24 +57,24 @@ export const ProfilePage: React.FC = () => {
       </div>
 
       {/* Main Profile Header Card */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-gradient-to-r dark:from-[#0a1533] dark:via-[#0c1b40] dark:to-[#071026] border border-slate-200 dark:border-[#192b57] shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="p-6 rounded-2xl bg-white dark:bg-gradient-to-r dark:from-navy dark:via-navy dark:to-navy-deep border border-slate-200 dark:border-navy-soft shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
           {/* Avatar with Circular Badge & Status Dot */}
           <div className="relative">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-600 p-0.5 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-              <div className="w-full h-full rounded-[14px] bg-[#0a1128] flex items-center justify-center text-2xl font-bold text-white tracking-wider">
+              <div className="w-full h-full rounded-[14px] bg-navy-deep flex items-center justify-center text-2xl font-bold text-white tracking-wider">
                 RS
               </div>
             </div>
             <span
-              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#0a1128] shadow-[0_0_8px_rgba(16,185,129,0.8)]"
+              className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white dark:border-navy-deep shadow-[0_0_8px_rgba(16,185,129,0.8)]"
               title="Online (Active Shift)"
             />
           </div>
 
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold text-[#0a1b44] dark:text-white tracking-tight">
+              <h1 className="text-2xl font-bold t-heading dark:text-white tracking-tight">
                 R. Sharma
               </h1>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold">
@@ -94,11 +94,11 @@ export const ProfilePage: React.FC = () => {
 
         {/* Quick Role Badges */}
         <div className="flex flex-wrap gap-2 text-xs font-mono">
-          <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f214d] border border-slate-200 dark:border-[#1e3a78] text-slate-700 dark:text-slate-200">
+          <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-navy-soft border border-slate-200 dark:border-industrial text-slate-700 dark:text-slate-200">
             <span className="text-[10px] text-slate-400 dark:text-sky-300/60 block">ROLE CLEARANCE</span>
             <span className="font-bold text-cyan-600 dark:text-cyan-400">Super Admin (L4)</span>
           </div>
-          <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f214d] border border-slate-200 dark:border-[#1e3a78] text-slate-700 dark:text-slate-200">
+          <div className="px-3 py-2 rounded-xl bg-slate-50 dark:bg-navy-soft border border-slate-200 dark:border-industrial text-slate-700 dark:text-slate-200">
             <span className="text-[10px] text-slate-400 dark:text-sky-300/60 block">STATION</span>
             <span className="font-bold text-slate-900 dark:text-white">Unit 01 Control Room</span>
           </div>
@@ -108,35 +108,35 @@ export const ProfilePage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Column: Account Information */}
         <div className="lg:col-span-2 space-y-5">
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#091430] border border-slate-200 dark:border-[#192b57] shadow-xs space-y-4">
+          <div className="p-5 rounded-2xl bg-white dark:bg-navy border border-slate-200 dark:border-navy-soft shadow-xs space-y-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-cyan-500" />
               Account & Operational Privileges
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
                 <span className="text-[10px] text-slate-400 block font-mono">DEPARTMENT</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block mt-0.5">
                   Process Automation & Digital Twins
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
                 <span className="text-[10px] text-slate-400 block font-mono">ASSIGNED ASSET</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block mt-0.5">
                   AquaTwin Skid Unit 01 (Desalination)
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
                 <span className="text-[10px] text-slate-400 block font-mono">CURRENT SHIFT</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block mt-0.5">
                   Shift B (06:00 – 14:00 IST)
                 </span>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
                 <span className="text-[10px] text-slate-400 block font-mono">ACTUATION PRIVILEGES</span>
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400 block mt-0.5">
                   Authorized (VFD, Valves & Scenarios)
@@ -146,7 +146,7 @@ export const ProfilePage: React.FC = () => {
           </div>
 
           {/* Recent Operator Activity Log */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-[#091430] border border-slate-200 dark:border-[#192b57] shadow-xs space-y-3">
+          <div className="p-5 rounded-2xl bg-white dark:bg-navy border border-slate-200 dark:border-navy-soft shadow-xs space-y-3">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
               <History className="w-4 h-4 text-cyan-500" />
               Recent Operator Action Trail
@@ -156,7 +156,7 @@ export const ProfilePage: React.FC = () => {
               {operatorLogs.slice(0, 4).map((log) => (
                 <div
                   key={log.id}
-                  className="p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e] flex items-start justify-between gap-3 text-xs"
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial flex items-start justify-between gap-3 text-xs"
                 >
                   <div>
                     <span className="font-semibold text-slate-800 dark:text-slate-200 block">
@@ -176,7 +176,7 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Right Column: Profile & Notification Settings */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-[#091430] border border-slate-200 dark:border-[#192b57] shadow-xs space-y-4">
+        <div className="p-5 rounded-2xl bg-white dark:bg-navy border border-slate-200 dark:border-navy-soft shadow-xs space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
             <Sliders className="w-4 h-4 text-cyan-500" />
             Profile Preferences
@@ -184,7 +184,7 @@ export const ProfilePage: React.FC = () => {
 
           <div className="space-y-3 text-xs">
             {/* Audio Alerts */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
               <div>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block">
                   Audible Alarm Buzzer
@@ -200,7 +200,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Critical Push */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
               <div>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block">
                   Critical Push Banners
@@ -216,7 +216,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Auto-Save Telemetry */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
               <div>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block">
                   High-Frequency Logging
@@ -232,7 +232,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Theme Toggle Button within Profile */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#0d1d42] border border-slate-200/80 dark:border-[#18366e]">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-navy border border-slate-200/80 dark:border-industrial">
               <div>
                 <span className="font-semibold text-slate-800 dark:text-slate-200 block">
                   Interface Theme

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { AnimatedNumber } from '../../shared/AnimatedNumber';
 import { usePlant } from '../../../context/PlantContext';
 import {
   Power,
@@ -117,6 +118,21 @@ const EQUIPMENT_CATALOG: Record<string, EquipMeta> = {
   },
 };
 
+
+
+// Dash animation runs faster at higher flow; callers only render these paths when flow > 0.
+const flowSpeed = (rate: number): React.CSSProperties => ({
+  animationDuration: `${Math.max(0.35, Math.min(2.6, 14 / Math.max(rate, 0.5)))}s`,
+});
+
+// Surface ripple: two wavelengths wide so the slow horizontal loop never shows a seam.
+const WAVE_PATH = (x: number, w: number): string => {
+  const a = 2.2;
+  const seg = (sx: number) =>
+    `q ${w / 4} ${-a} ${w / 2} 0 q ${w / 4} ${a} ${w / 2} 0`;
+  return `M ${x - w} 0 ${seg(x - w)} ${seg(x)} l 0 8 l ${-2 * w} 0 Z`;
+};
+
 export const PidDiagram: React.FC = () => {
   const {
     telemetry,
@@ -161,6 +177,11 @@ export const PidDiagram: React.FC = () => {
   const hasPermeate    = hasHpFlow && telemetry.ro_permeateFlowM3h > 0.5;
   const hasReject      = hasHpFlow && telemetry.ro_rejectFlowM3h > 0.5;
 
+  // Water level eases to its new height instead of jumping on each simulation tick.
+  const LEVEL_TRANSITION: React.CSSProperties = {
+    transition: 'y 600ms ease-out, height 600ms ease-out, transform 600ms ease-out',
+  };
+
   // SVG water level calculations (tank body: y=175 to y=405, height=230)
   const TK_TOP = 175; const TK_BOT = 405; const TK_H = TK_BOT - TK_TOP;
   const tk101WaterY  = TK_BOT - (tk101Level / 100) * TK_H;
@@ -174,7 +195,7 @@ export const PidDiagram: React.FC = () => {
   return (
     <div
       ref={containerRef}
-      className={`relative w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col transition-all ${
+      className={`card relative w-full overflow-hidden flex flex-col ${
         isFullscreen ? 'fixed inset-0 z-50 rounded-none border-none' : ''
       }`}
     >
@@ -217,7 +238,7 @@ export const PidDiagram: React.FC = () => {
       </div>
 
       {/* ── SVG Viewport ── */}
-      <div className={`relative flex-1 min-h-[500px] w-full flex items-center justify-center p-2 overflow-x-auto overflow-y-hidden ${isDark ? 'bg-[#070b14]' : 'bg-slate-50'}`}>
+      <div className={`relative flex-1 min-h-[500px] w-full flex items-center justify-center p-2 overflow-x-auto overflow-y-hidden ${isDark ? 'bg-navy-deep' : 'bg-slate-50'}`}>
         <svg
           viewBox="0 0 1140 480"
           className="w-full h-full max-h-[560px] select-none"
@@ -277,7 +298,7 @@ export const PidDiagram: React.FC = () => {
           {hasIntakeFlow && (
             <path d="M100,210 L148,210 L148,142 L185,142 L185,158"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              strokeLinejoin="round" className="animate-pipe-flow" strokeOpacity="0.7" />
+              strokeLinejoin="round" className="animate-pipe-flow" strokeOpacity="0.7" style={flowSpeed(telemetry.xv101_openingPercent / 5)} />
           )}
 
           {/* Feed: TK-101 bottom → STR-101 → P-101 */}
@@ -286,7 +307,7 @@ export const PidDiagram: React.FC = () => {
           {hasFeedFlow && (
             <path d="M205,408 L205,423 L340,423"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              className="animate-pipe-flow" strokeOpacity="0.7" />
+              className="animate-pipe-flow" strokeOpacity="0.7" style={flowSpeed(telemetry.p101_flowM3h)} />
           )}
 
           {/* Feed: P-101 → P-201 */}
@@ -295,7 +316,7 @@ export const PidDiagram: React.FC = () => {
           {hasFeedFlow && (
             <path d="M368,423 L420,423"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              className="animate-pipe-flow" strokeOpacity="0.7" />
+              className="animate-pipe-flow" strokeOpacity="0.7" style={flowSpeed(telemetry.p101_flowM3h)} />
           )}
 
           {/* Feed: P-201 → up to F-201 → F-202 → down → header */}
@@ -304,7 +325,7 @@ export const PidDiagram: React.FC = () => {
           {hasBoostFlow && (
             <path d="M448,423 L468,423 L468,255 L485,255 M505,405 L505,255 L535,255 M555,405 L555,423 L642,423"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              strokeLinejoin="round" className="animate-pipe-flow" strokeOpacity="0.7" />
+              strokeLinejoin="round" className="animate-pipe-flow" strokeOpacity="0.7" style={flowSpeed(telemetry.p201_flowM3h)} />
           )}
 
           {/* Chemical dosing injection */}
@@ -317,7 +338,7 @@ export const PidDiagram: React.FC = () => {
           {hasHpFlow && (
             <path d="M656,340 L688,340 L688,225 L702,225 M688,268 L702,268 M688,312 L702,312 M688,355 L702,355"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              strokeLinejoin="round" className="animate-pipe-flow-fast" strokeOpacity="0.7" />
+              strokeLinejoin="round" className="animate-pipe-flow-fast" strokeOpacity="0.7" style={flowSpeed(telemetry.ro_feedFlowM3h)} />
           )}
 
           {/* Permeate: RO right → header → TK-201 top */}
@@ -326,7 +347,7 @@ export const PidDiagram: React.FC = () => {
           {hasPermeate && (
             <path d="M830,225 L845,225 L845,158 L940,158 L940,172 M830,268 L845,268 M830,312 L845,312 M830,355 L845,355"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              strokeLinejoin="round" className="animate-pipe-flow" strokeOpacity="0.7" />
+              strokeLinejoin="round" className="animate-pipe-flow" strokeOpacity="0.7" style={flowSpeed(telemetry.ro_permeateFlowM3h)} />
           )}
 
           {/* Reject: RO right manifold → V-201 → drain */}
@@ -335,7 +356,7 @@ export const PidDiagram: React.FC = () => {
           {hasReject && (
             <path d="M830,235 L860,235 L860,380 L878,380 M892,380 L905,380 L905,430"
               fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"
-              strokeLinejoin="round" className="animate-pipe-flow-reject" strokeOpacity="0.7" />
+              strokeLinejoin="round" className="animate-pipe-flow-reject" strokeOpacity="0.7" style={flowSpeed(telemetry.ro_rejectFlowM3h)} />
           )}
 
           {/* Permeate tank outlet */}
@@ -344,7 +365,7 @@ export const PidDiagram: React.FC = () => {
           {tk201Level > 5 && (
             <path d="M960,408 L960,423 L1055,423"
               fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round"
-              className="animate-pipe-flow" strokeOpacity="0.7" />
+              className="animate-pipe-flow" strokeOpacity="0.7" style={flowSpeed(telemetry.ro_permeateFlowM3h)} />
           )}
 
           {/* ── XV-101 INTAKE VALVE ── */}
@@ -385,8 +406,10 @@ export const PidDiagram: React.FC = () => {
               fill="url(#tankGrad)" stroke="#94a3b8" strokeWidth="2.5" />
             {/* Water fill */}
             <g clipPath="url(#tk101clip)">
-              <rect x="152" y={tk101WaterY} width="106" height={tk101WaterH} fill="url(#tk101water)" />
-              <line x1="152" y1={tk101WaterY} x2="258" y2={tk101WaterY} stroke="#38bdf8" strokeWidth="2.5" />
+              <rect x="152" y={tk101WaterY} width="106" height={tk101WaterH} fill="url(#tk101water)" style={LEVEL_TRANSITION} />
+              <g style={LEVEL_TRANSITION} transform={`translate(0 ${tk101WaterY})`}>
+                <path className="tank-wave" d={WAVE_PATH(152, 106)} fill="#38bdf8" fillOpacity="0.55" />
+              </g>
               {/* Setpoint line */}
               <line x1="152" y1={tk101SpY} x2="258" y2={tk101SpY}
                 stroke="#eab308" strokeWidth="2" strokeDasharray="5 3" />
@@ -439,6 +462,10 @@ export const PidDiagram: React.FC = () => {
             </text>
             {/* Body */}
             <circle cx="355" cy="423" r="11" fill={telemetry.p101_running ? '#0284c7' : '#94a3b8'} stroke="#0f172a" strokeWidth="2" />
+            <g className={telemetry.p101_running ? 'impeller-spin' : undefined} style={{ transformOrigin: '355px 423px' }}>
+              <path d="M355,416 L357,421 L362,423 L357,425 L355,430 L353,425 L348,423 L353,421 Z" fill="#ffffff" fillOpacity="0.85" />
+            </g>
+            <circle cx="368" cy="412" r="3" fill={telemetry.p101_running ? '#10b981' : '#94a3b8'} className={telemetry.p101_running ? 'status-dot-running' : undefined} />
             <rect x="332" y="416" width="15" height="14" rx="2" fill={telemetry.p101_running ? '#38bdf8' : '#cbd5e1'} stroke="#0f172a" strokeWidth="1.5" />
             <line x1="335" y1="416" x2="335" y2="430" stroke="#0f172a" strokeWidth="1" />
             <line x1="339" y1="416" x2="339" y2="430" stroke="#0f172a" strokeWidth="1" />
@@ -458,6 +485,10 @@ export const PidDiagram: React.FC = () => {
             </text>
             {/* Body */}
             <circle cx="435" cy="423" r="11" fill={telemetry.p201_running ? '#0284c7' : '#94a3b8'} stroke="#0f172a" strokeWidth="2" />
+            <g className={telemetry.p201_running ? 'impeller-spin' : undefined} style={{ transformOrigin: '435px 423px' }}>
+              <path d="M435,416 L437,421 L442,423 L437,425 L435,430 L433,425 L428,423 L433,421 Z" fill="#ffffff" fillOpacity="0.85" />
+            </g>
+            <circle cx="448" cy="412" r="3" fill={telemetry.p201_running ? '#10b981' : '#94a3b8'} className={telemetry.p201_running ? 'status-dot-running' : undefined} />
             <rect x="412" y="416" width="15" height="14" rx="2" fill={telemetry.p201_running ? '#38bdf8' : '#cbd5e1'} stroke="#0f172a" strokeWidth="1.5" />
             <line x1="415" y1="416" x2="415" y2="430" stroke="#0f172a" strokeWidth="1" />
             <line x1="419" y1="416" x2="419" y2="430" stroke="#0f172a" strokeWidth="1" />
@@ -537,6 +568,7 @@ export const PidDiagram: React.FC = () => {
             </text>
             {/* Motor */}
             <rect x="644" y="237" width="24" height="38" rx="3" fill="#312e81" stroke="#1e1b4b" strokeWidth="2" />
+            <circle cx="674" cy="240" r="3.2" fill={telemetry.p202_running ? '#10b981' : '#f43f5e'} className={telemetry.p202_running ? 'status-dot-running' : 'status-glow-tripped'} />
             {[244,250,256,262,268].map(y => (
               <line key={y} x1="644" y1={y} x2="668" y2={y} stroke="#4338ca" strokeWidth="1" />
             ))}
@@ -619,8 +651,10 @@ export const PidDiagram: React.FC = () => {
               fill="url(#tankGrad)" stroke="#94a3b8" strokeWidth="2.5" />
             {/* Water fill */}
             <g clipPath="url(#tk201clip)">
-              <rect x="907" y={tk201WaterY} width="106" height={tk201WaterH} fill="url(#tk201water)" />
-              <line x1="907" y1={tk201WaterY} x2="1013" y2={tk201WaterY} stroke="#34d399" strokeWidth="2.5" />
+              <rect x="907" y={tk201WaterY} width="106" height={tk201WaterH} fill="url(#tk201water)" style={LEVEL_TRANSITION} />
+              <g style={LEVEL_TRANSITION} transform={`translate(0 ${tk201WaterY})`}>
+                <path className="tank-wave" d={WAVE_PATH(907, 106)} fill="#34d399" fillOpacity="0.55" />
+              </g>
             </g>
             {/* LT-201 badge */}
             <rect x="945" y="132" width="30" height="14" rx="4" fill="#dcfce7" stroke="#10b981" strokeWidth="1.2" />
@@ -654,7 +688,7 @@ export const PidDiagram: React.FC = () => {
           <div
             className={`absolute top-6 ${
               selectedEquip.cardSide === 'right' ? 'right-5' : 'left-5'
-            } w-80 bg-white/96 dark:bg-slate-900/96 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 text-xs z-30`}
+            } w-80 bg-white/96 dark:bg-slate-900/96 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl p-4 text-xs z-30`}
           >
             {/* Header */}
             <div className="flex items-start justify-between pb-2 mb-2 border-b border-slate-200 dark:border-slate-700">
@@ -691,7 +725,7 @@ export const PidDiagram: React.FC = () => {
               {selectedEquip.tag === 'TK-101' && (<>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Level</span>
-                  <span className="font-bold font-mono text-cyan-600 text-sm">{tk101Level.toFixed(1)}%</span>
+                  <span className="font-bold font-mono text-cyan-600 text-sm"><AnimatedNumber value={tk101Level} decimals={1} suffix="%" /></span>
                 </div>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Volume</span>
@@ -709,7 +743,7 @@ export const PidDiagram: React.FC = () => {
               {selectedEquip.tag === 'TK-201' && (<>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Level</span>
-                  <span className="font-bold font-mono text-emerald-600 text-sm">{tk201Level.toFixed(1)}%</span>
+                  <span className="font-bold font-mono text-emerald-600 text-sm"><AnimatedNumber value={tk201Level} decimals={1} suffix="%" /></span>
                 </div>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Volume</span>
@@ -727,7 +761,7 @@ export const PidDiagram: React.FC = () => {
               {(selectedEquip.tag === 'P-101') && (<>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Flow</span>
-                  <span className="font-bold font-mono text-cyan-600 text-sm">{telemetry.p101_flowM3h.toFixed(1)} m³/h</span>
+                  <span className="font-bold font-mono text-cyan-600 text-sm"><AnimatedNumber value={telemetry.p101_flowM3h} decimals={1} suffix=" m³/h" /></span>
                 </div>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Discharge P</span>
@@ -781,7 +815,7 @@ export const PidDiagram: React.FC = () => {
               {selectedEquip.tag === 'RO-201' && (<>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Permeate Flow</span>
-                  <span className="font-bold font-mono text-emerald-600 text-sm">{telemetry.ro_permeateFlowM3h.toFixed(1)} m³/h</span>
+                  <span className="font-bold font-mono text-emerald-600 text-sm"><AnimatedNumber value={telemetry.ro_permeateFlowM3h} decimals={1} suffix=" m³/h" /></span>
                 </div>
                 <div className="p-2 rounded bg-slate-50 dark:bg-slate-800/50">
                   <span className="text-[10px] text-slate-400 block">Recovery</span>

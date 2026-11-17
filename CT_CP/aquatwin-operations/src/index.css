@@ -2,6 +2,101 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  /* Brand palette — mapped onto the layered blue scale. */
+  --color-navy: #0F2647;
+  --color-navy-deep: #06122A;
+  --color-navy-soft: #1B3A66;
+  --color-industrial: #0C4A76;
+  --color-primary: #168BDB;
+  --color-sky: #6ACBFA;
+  --color-tint: #E8F2FC;
+
+  /* `cyan` is the app's accent ramp: every cyan-* utility already in the
+     markup picks these up. */
+  --color-cyan-50: #EAF6FE;
+  --color-cyan-100: #D2ECFD;
+  --color-cyan-200: #A8DAFB;
+  --color-cyan-300: #6ACBFA;
+  --color-cyan-400: #3DB5F5;
+  --color-cyan-500: #168BDB;
+  --color-cyan-600: #1173B8;
+  --color-cyan-700: #0E5C93;
+  --color-cyan-800: #0C4A76;
+  --color-cyan-900: #0B3B5E;
+  --color-cyan-950: #082640;
+
+  /* `slate` carries surfaces, borders and text in both themes, blue-tinted so
+     the layers separate. 850 is not a stock step but the markup uses it. */
+  --color-slate-50: #F4F9FE;
+  --color-slate-100: #E8F2FC;
+  --color-slate-200: #D3E4F5;
+  --color-slate-300: #B0CAE5;
+  --color-slate-400: #86A7CB;
+  --color-slate-500: #5A7FA8;
+  --color-slate-600: #3E6494;
+  --color-slate-700: #2A4E80;
+  --color-slate-800: #1B3A66;
+  --color-slate-850: #143057;
+  --color-slate-900: #0F2647;
+  --color-slate-950: #06122A;
+}
+
+/* Semantic layers. Depth order in dark: nav < page < inset < card < card-hover < raised. */
+:root {
+  --bg-page-from: #EEF6FD;
+  --bg-page-to: #F9FCFF;
+  --bg-nav: #0B1F3A;
+  --nav-border: #123E68;
+  --nav-text: #FFFFFF;
+  --nav-muted: #A8C8E8;
+  --nav-active-bg: #123E68;
+  --nav-active-text: #FFFFFF;
+  --nav-active-bar: #6ACBFA;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F7FBFF;
+  --bg-inset: #F4F9FE;
+  --bg-raised: #E8F2FC;
+  --border: #D3E4F5;
+  --border-strong: #A8DAFB;
+  --text-heading: #0B1F3A;
+  --text-body: #2A4E80;
+  --text-muted: #4F7299;
+  --primary: #1173B8;
+  --primary-hover: #0E5C93;
+  --on-primary: #FFFFFF;
+  --focus-ring: #6ACBFA;
+  --card-shadow: 0 1px 2px rgba(11, 31, 58, 0.06), 0 8px 24px rgba(22, 139, 219, 0.08);
+  --module-accent: #0E5C93;
+}
+
+.dark {
+  --bg-page-from: #06122A;
+  --bg-page-to: #0A1B38;
+  --bg-nav: #040C1D;
+  --nav-border: #1B3A66;
+  --nav-text: #E8F2FC;
+  --nav-muted: #86A7CB;
+  --nav-active-bg: #0F2647;
+  --nav-active-text: #FFFFFF;
+  --nav-active-bar: #3DB5F5;
+  --bg-card: #0F2647;
+  --bg-card-hover: #143057;
+  --bg-inset: #0A1D3A;
+  --bg-raised: #1B3A66;
+  --border: #1B3A66;
+  --border-strong: #2A4E80;
+  --text-heading: #FFFFFF;
+  --text-body: #D3E4F5;
+  --text-muted: #86A7CB;
+  --primary: #3DB5F5;
+  --primary-hover: #6ACBFA;
+  --on-primary: #06122A;
+  --focus-ring: #6ACBFA;
+  --card-shadow: 0 1px 0 rgba(106, 203, 250, 0.06) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --module-accent: #A8DAFB;
+}
+
 @layer base {
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
@@ -16,6 +111,123 @@
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
+
+  /* Live readouts must not jitter as digits change. */
+  .tabular, [data-live-number] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Page background: tinted gradient rather than flat fill. */
+.app-surface {
+  background-image: linear-gradient(160deg, var(--bg-page-from) 0%, var(--bg-page-to) 100%);
+}
+.dark .app-surface,
+.app-surface:where(.dark) {
+  background-image: linear-gradient(160deg, var(--bg-page-from) 0%, var(--bg-page-to) 100%);
+}
+
+/* Reusable surfaces */
+.card {
+  background-color: var(--bg-card);
+  color: var(--text-body);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  transition: transform 200ms ease-out, border-color 200ms ease-out, box-shadow 200ms ease-out,
+    background-color 200ms ease-out;
+}
+.card:hover {
+  transform: translateY(-2px);
+  background-color: var(--bg-card-hover);
+  border-color: var(--border-strong);
+}
+
+/* Panels and rows nested inside a card sit one step back from it. */
+.inset {
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border);
+}
+/* Chips, badges and table headers sit one step forward. */
+.raised {
+  background-color: var(--bg-raised);
+  color: var(--text-heading);
+}
+
+.btn {
+  border-radius: 8px;
+  transition: transform 150ms ease-out, background-color 150ms ease-out, border-color 150ms ease-out,
+    color 150ms ease-out;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn:focus-visible,
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Primary action */
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--on-primary);
+  border: 1px solid transparent;
+}
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+/* Secondary action */
+.btn-secondary {
+  background-color: var(--bg-raised);
+  color: var(--text-heading);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover {
+  border-color: var(--border-strong);
+}
+
+/* Navigation chrome: nav vars only, so it reads the same in both themes. */
+.nav-surface {
+  background-color: var(--bg-nav);
+  color: var(--nav-text);
+}
+.nav-border-b {
+  border-bottom: 1px solid var(--nav-border);
+}
+.nav-border-r {
+  border-right: 1px solid var(--nav-border);
+}
+.nav-text {
+  color: var(--nav-text);
+}
+.nav-muted {
+  color: var(--nav-muted);
+}
+.nav-item {
+  color: var(--nav-muted);
+  transition: background-color 150ms ease-out, color 150ms ease-out;
+}
+.nav-item:hover {
+  background-color: var(--nav-active-bg);
+  color: var(--nav-text);
+}
+.nav-item-active {
+  background-color: var(--nav-active-bg);
+  color: var(--nav-active-text);
+  box-shadow: inset 3px 0 0 var(--nav-active-bar);
+}
+
+/* Text roles */
+.t-heading {
+  color: var(--text-heading);
+}
+.t-body {
+  color: var(--text-body);
+}
+.t-muted {
+  color: var(--text-muted);
 }
 
 /* Pipe flow animations for interactive P&ID */
@@ -114,12 +326,85 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(11, 31, 58, 0.08);
+}
+.dark ::-webkit-scrollbar-track {
+  background: rgba(11, 31, 58, 0.6);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.4);
+  background: rgba(22, 139, 219, 0.35);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.6);
+  background: rgba(22, 139, 219, 0.6);
+}
+
+/* Equipment/status motion helpers */
+@keyframes impellerSpin {
+  to { transform: rotate(360deg); }
+}
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+@keyframes alarmRowPulse {
+  0%, 100% { background-color: rgba(244, 63, 94, 0.06); }
+  50% { background-color: rgba(244, 63, 94, 0.16); }
+}
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(11deg); }
+  60% { transform: rotate(-7deg); }
+  80% { transform: rotate(4deg); }
+}
+
+.status-dot-running {
+  animation: statusPulse 1.8s ease-in-out infinite;
+}
+.status-glow-tripped {
+  filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.9));
+}
+.alarm-row-unack {
+  animation: alarmRowPulse 2s ease-in-out infinite;
+}
+.bell-shake {
+  animation: bellShake 600ms ease-out 1;
+}
+
+/* Non-essential motion is opt-out. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .card:hover {
+    transform: none;
+  }
+}
+
+/* Tank surface ripple */
+@keyframes tankWave {
+  from { transform: translateX(0); }
+  to   { transform: translateX(106px); }
+}
+.tank-wave {
+  animation: tankWave 4.5s linear infinite;
+}
+
+/* Pump impeller */
+.impeller-spin {
+  animation: impellerSpin 1.1s linear infinite;
+}
+
+/* Landing cards: keep the app's card metrics, not SpotlightCard's defaults */
+.spotlight-card.landing-card {
+  padding: 1rem;
+  border-radius: 12px;
+}
+@media (min-width: 640px) {
+  .spotlight-card.landing-card {
+    padding: 1.25rem;
+  }
 }

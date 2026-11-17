@@ -4,12 +4,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { usePlant } from '../../context/PlantContext';
+import type { ModuleType } from '../../types/plant';
 import { ModeBanner } from '../../components/shared/ModeBanner';
 import { WaterQualityView } from '../../components/modules/WaterQuality/WaterQualityView';
 import { EnergyView } from '../../components/modules/EnergyPerformance/EnergyView';
 import { ReportsView } from '../../components/modules/ReportsAnalytics/ReportsView';
 import { RecordedTrend } from './RecordedTrend';
+import { PerformanceSummary } from './PerformanceSummary';
+import { AnimatedNumber } from '../../components/shared/AnimatedNumber';
 import { generateProcessTrends, ProcessTrendPoint } from './sampleData';
 import {
   BarChart3,
@@ -36,9 +40,35 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
+type AnalysisTab = 'trends' | 'quality' | 'energy' | 'alarms' | 'reports';
+
+const analysisTabForModule = (m: ModuleType): AnalysisTab => {
+  switch (m) {
+    case 'water_quality':
+      return 'quality';
+    case 'energy':
+      return 'energy';
+    case 'reports':
+      return 'reports';
+    default:
+      return 'trends';
+  }
+};
+
 export const AnalysisView: React.FC = () => {
-  const { telemetry, alarms, theme } = usePlant();
-  const [analysisTab, setAnalysisTab] = useState<'trends' | 'quality' | 'energy' | 'alarms' | 'reports'>('trends');
+
+  // Charts animate once on mount; live ticks update values without replaying the animation.
+  const [chartAnimate, setChartAnimate] = useState<boolean>(true);
+  useEffect(() => {
+    const t = setTimeout(() => setChartAnimate(false), 900);
+    return () => clearTimeout(t);
+  }, []);
+  const { telemetry, alarms, theme, activeModule } = usePlant();
+  const [analysisTab, setAnalysisTab] = useState<AnalysisTab>(() => analysisTabForModule(activeModule));
+
+  useEffect(() => {
+    setAnalysisTab(analysisTabForModule(activeModule));
+  }, [activeModule]);
 
   // Stable realistic fluctuating sample dataset (48 historical sample points)
   const [trendData, setTrendData] = useState<ProcessTrendPoint[]>(() => generateProcessTrends(48));
@@ -74,11 +104,11 @@ export const AnalysisView: React.FC = () => {
 
   // Units and labels dictionary for individual hover tooltip
   const seriesMeta: Record<string, { label: string; unit: string; color: string }> = {
-    tankLevelPercent: { label: 'Tank Level', unit: '%', color: '#06b6d4' },
+    tankLevelPercent: { label: 'Tank Level', unit: '%', color: '#168BDB' },
     permeateFlowM3h: { label: 'Permeate Flow', unit: 'm³/h', color: '#10b981' },
-    recoveryPercent: { label: 'RO Recovery', unit: '%', color: '#3b82f6' },
+    recoveryPercent: { label: 'RO Recovery', unit: '%', color: '#6ACBFA' },
     powerKw: { label: 'Power Consumption', unit: 'kW', color: '#f59e0b' },
-    feedPressureBar: { label: 'RO Feed Pressure', unit: 'bar', color: '#a855f7' },
+    feedPressureBar: { label: 'RO Feed Pressure', unit: 'bar', color: '#0E5C93' },
   };
 
   // Phase 3: Custom Tooltip that displays ONLY the hovered parameter
@@ -97,8 +127,8 @@ export const AnalysisView: React.FC = () => {
     };
 
     return (
-      <div className="bg-white dark:bg-[#0a1128] border border-slate-200 dark:border-[#1e3366] rounded-xl p-2.5 shadow-lg text-xs font-sans min-w-[150px]">
-        <div className="text-[10px] text-slate-400 font-mono pb-1 mb-1.5 border-b border-slate-100 dark:border-[#182952]">
+      <div className="bg-white dark:bg-navy-deep border border-slate-200 dark:border-navy-soft rounded-xl p-2.5 shadow-lg text-xs font-sans min-w-[150px]">
+        <div className="text-[10px] text-slate-400 font-mono pb-1 mb-1.5 border-b border-slate-100 dark:border-navy-soft">
           Time: <span className="font-bold text-slate-700 dark:text-slate-200">{label}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -176,46 +206,47 @@ export const AnalysisView: React.FC = () => {
       <ModeBanner />
 
       {/* PHASE 1: Title Header - Redesigned with Light Sky-Blue / Ice-Blue Theme */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-sky-50 via-blue-50/80 to-cyan-50 border border-sky-200/90 p-4 sm:p-5 rounded-2xl shadow-sm shadow-sky-100/50">
+      <div className="card flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl"
+        style={{ borderTop: '2px solid var(--module-accent)' }}>
         <div className="flex items-center gap-3.5">
-          <div className="p-2.5 rounded-xl bg-white border border-sky-200 text-blue-600 shadow-xs">
-            <BarChart3 className="w-5 h-5 text-blue-600" />
+          <div className="p-2.5 rounded-xl shadow-xs" style={{ backgroundColor: 'color-mix(in srgb, var(--module-accent) 15%, transparent)', color: 'var(--module-accent)' }}>
+            <BarChart3 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-extrabold text-[#0a1b44] tracking-tight">
-                Analysis Module — Historical Performance, Water Quality & Reports
+              <h1 className="text-base sm:text-lg font-extrabold t-heading tracking-tight">
+                Analysis
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-600 text-white shadow-xs tracking-wider font-mono">
+              <span className="btn-primary text-[10px] font-bold px-2 py-0.5 rounded-md shadow-xs tracking-wider font-mono">
                 ANALYTICAL HUB
               </span>
             </div>
-            <p className="text-xs text-[#1e3a66] font-medium mt-0.5">
+            <p className="text-xs t-muted font-medium mt-0.5">
               Long-term process trends, water quality compliance, energy consumption metrics & report exports
             </p>
           </div>
         </div>
 
         {/* Quick Performance Indicators — Prominent Visual Metrics */}
-        <div className="flex items-center gap-3.5 text-xs font-mono bg-white/90 backdrop-blur-xs px-4 py-2.5 rounded-xl border border-sky-200 shadow-xs shrink-0">
+        <div className="inset flex items-center gap-3.5 text-xs font-mono px-4 py-2.5 rounded-xl shadow-xs shrink-0">
           <div>
-            <span className="text-[10px] text-slate-500 font-sans uppercase font-bold block">RO Recovery</span>
-            <span className="text-base font-black text-blue-700 font-mono">
-              {telemetry.ro_recoveryPercent.toFixed(1)}%
+            <span className="t-muted text-[10px] font-sans uppercase font-bold block">RO Recovery</span>
+            <span className="text-base font-black font-mono" style={{ color: 'var(--primary)' }}>
+              <AnimatedNumber value={telemetry.ro_recoveryPercent} decimals={1} suffix="%" />
             </span>
           </div>
-          <div className="w-px h-8 bg-sky-200" />
+          <div className="w-px h-8" style={{ backgroundColor: 'var(--border)' }} />
           <div>
-            <span className="text-[10px] text-slate-500 font-sans uppercase font-bold block">Product TDS</span>
-            <span className="text-base font-black text-cyan-600 font-mono">
-              {telemetry.permeateQuality.tdsMgL} <span className="text-[10px] font-normal text-slate-500">mg/L</span>
+            <span className="t-muted text-[10px] font-sans uppercase font-bold block">Product TDS</span>
+            <span className="text-base font-black font-mono" style={{ color: 'var(--primary)' }}>
+              <AnimatedNumber value={telemetry.permeateQuality.tdsMgL} /> <span className="t-muted text-[10px] font-normal">mg/L</span>
             </span>
           </div>
-          <div className="w-px h-8 bg-sky-200" />
+          <div className="w-px h-8" style={{ backgroundColor: 'var(--border)' }} />
           <div>
-            <span className="text-[10px] text-slate-500 font-sans uppercase font-bold block">Daily Production</span>
-            <span className="text-base font-black text-[#0a1b44] font-mono">
-              {telemetry.dailyProductionM3.toFixed(1)} <span className="text-[10px] font-normal text-slate-500">m³</span>
+            <span className="t-muted text-[10px] font-sans uppercase font-bold block">Daily Production</span>
+            <span className="text-base font-black t-heading font-mono">
+              <AnimatedNumber value={telemetry.dailyProductionM3} decimals={1} /> <span className="t-muted text-[10px] font-normal">m³</span>
             </span>
           </div>
         </div>
@@ -230,26 +261,34 @@ export const AnalysisView: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setAnalysisTab(tab.id)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all duration-200 flex items-center gap-2 cursor-pointer group select-none ${
+              className={`btn relative px-3.5 py-2 text-xs font-medium transition-colors duration-200 flex items-center gap-2 cursor-pointer group select-none ${
                 isActive
-                  ? 'bg-sky-50 dark:bg-[#0d224d] border-2 border-cyan-500 dark:border-cyan-400 text-[#091b40] dark:text-cyan-200 font-bold shadow-xs shadow-cyan-500/20'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-cyan-400/40 hover:text-slate-900 dark:hover:text-white'
+                  ? 't-heading dark:text-cyan-200 font-bold'
+                  : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
+              {isActive && (
+                <motion.span
+                  layoutId="analysis-tab-indicator"
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  className="absolute inset-0 rounded-xl bg-sky-50 dark:bg-navy border-2 border-cyan-500 dark:border-cyan-400 shadow-xs shadow-cyan-500/20"
+                />
+              )}
               <Icon
-                className={`w-4 h-4 transition-transform group-hover:scale-105 ${
+                className={`relative w-4 h-4 transition-transform group-hover:scale-105 ${
                   isActive
                     ? 'text-cyan-600 dark:text-cyan-400'
                     : 'text-slate-400 dark:text-slate-400 group-hover:text-cyan-500'
                 }`}
               />
-              <span>{tab.label}</span>
+              <span className="relative">{tab.label}</span>
             </button>
           );
         })}
       </div>
 
       {/* Tab 1: Process Trends — PHASE 4: 2-COLUMN HALF-GRAPH + INFO PANEL */}
+      {analysisTab === 'trends' && <PerformanceSummary />}
       {analysisTab === 'trends' && <RecordedTrend />}
       {analysisTab === 'trends' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
@@ -276,28 +315,28 @@ export const AnalysisView: React.FC = () => {
                   <AreaChart data={trendData} margin={{ top: 10, right: 15, left: 0, bottom: 15 }}>
                     <defs>
                       <linearGradient id="colorTank" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
+                        <stop offset="5%" stopColor="#168BDB" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#168BDB" stopOpacity={0.0} />
                       </linearGradient>
                       <linearGradient id="colorPermeate" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
                         <stop offset="95%" stopColor="#10b981" stopOpacity={0.0} />
                       </linearGradient>
                       <linearGradient id="colorRecovery" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
+                        <stop offset="5%" stopColor="#6ACBFA" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#6ACBFA" stopOpacity={0.0} />
                       </linearGradient>
                       <linearGradient id="colorPower" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.25} />
                         <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.0} />
                       </linearGradient>
                       <linearGradient id="colorPressure" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.25} />
-                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0.0} />
+                        <stop offset="5%" stopColor="#0E5C93" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#0E5C93" stopOpacity={0.0} />
                       </linearGradient>
                     </defs>
 
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1B3A66' : '#D3E4F5'} opacity={0.6} />
 
                     {/* PHASE 2: Clear X-Axis Label */}
                     <XAxis
@@ -342,14 +381,16 @@ export const AnalysisView: React.FC = () => {
 
                     {/* 1. Tank Level */}
                     <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                       type="monotone"
                       dataKey="tankLevelPercent"
                       name="Tank Level (%)"
-                      stroke="#06b6d4"
+                      stroke="#168BDB"
                       strokeWidth={2.2}
                       fillOpacity={1}
                       fill="url(#colorTank)"
-                      dot={{ r: 2, fill: '#fff', stroke: '#06b6d4', strokeWidth: 1.5 }}
+                      dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#168BDB', strokeWidth: 1.5 }}
                       activeDot={{ r: 5 }}
                       onMouseEnter={() => setHoveredSeries('tankLevelPercent')}
                       onMouseLeave={() => setHoveredSeries(null)}
@@ -357,6 +398,8 @@ export const AnalysisView: React.FC = () => {
 
                     {/* 2. Permeate Flow */}
                     <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                       type="monotone"
                       dataKey="permeateFlowM3h"
                       name="Permeate Flow (m³/h)"
@@ -364,7 +407,7 @@ export const AnalysisView: React.FC = () => {
                       strokeWidth={2.2}
                       fillOpacity={1}
                       fill="url(#colorPermeate)"
-                      dot={{ r: 2, fill: '#fff', stroke: '#10b981', strokeWidth: 1.5 }}
+                      dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#10b981', strokeWidth: 1.5 }}
                       activeDot={{ r: 5 }}
                       onMouseEnter={() => setHoveredSeries('permeateFlowM3h')}
                       onMouseLeave={() => setHoveredSeries(null)}
@@ -372,14 +415,16 @@ export const AnalysisView: React.FC = () => {
 
                     {/* 3. RO Recovery */}
                     <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                       type="monotone"
                       dataKey="recoveryPercent"
                       name="RO Recovery (%)"
-                      stroke="#3b82f6"
+                      stroke="#6ACBFA"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorRecovery)"
-                      dot={{ r: 2, fill: '#fff', stroke: '#3b82f6', strokeWidth: 1.5 }}
+                      dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#6ACBFA', strokeWidth: 1.5 }}
                       activeDot={{ r: 5 }}
                       onMouseEnter={() => setHoveredSeries('recoveryPercent')}
                       onMouseLeave={() => setHoveredSeries(null)}
@@ -387,6 +432,8 @@ export const AnalysisView: React.FC = () => {
 
                     {/* 4. Power Consumption */}
                     <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                       type="monotone"
                       dataKey="powerKw"
                       name="Power Consumption (kW)"
@@ -394,7 +441,7 @@ export const AnalysisView: React.FC = () => {
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorPower)"
-                      dot={{ r: 2, fill: '#fff', stroke: '#f59e0b', strokeWidth: 1.5 }}
+                      dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#f59e0b', strokeWidth: 1.5 }}
                       activeDot={{ r: 5 }}
                       onMouseEnter={() => setHoveredSeries('powerKw')}
                       onMouseLeave={() => setHoveredSeries(null)}
@@ -402,14 +449,16 @@ export const AnalysisView: React.FC = () => {
 
                     {/* 5. RO Feed Pressure */}
                     <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                       type="monotone"
                       dataKey="feedPressureBar"
                       name="RO Feed Pressure (bar)"
-                      stroke="#a855f7"
+                      stroke="#0E5C93"
                       strokeWidth={2}
                       fillOpacity={1}
                       fill="url(#colorPressure)"
-                      dot={{ r: 2, fill: '#fff', stroke: '#a855f7', strokeWidth: 1.5 }}
+                      dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#0E5C93', strokeWidth: 1.5 }}
                       activeDot={{ r: 5 }}
                       onMouseEnter={() => setHoveredSeries('feedPressureBar')}
                       onMouseLeave={() => setHoveredSeries(null)}
@@ -426,14 +475,14 @@ export const AnalysisView: React.FC = () => {
           </div>
 
           {/* Right Column: PHASE 4 Information Panel (45% width -> col-span-12 lg:col-span-5) */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-white via-sky-50/40 to-blue-50/30 dark:from-[#0a1530] dark:via-[#0c1a3d] dark:to-[#071126] border border-sky-200/80 dark:border-[#1a3366] rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-gradient-to-br from-white via-sky-50/40 to-blue-50/30 dark:from-navy dark:via-navy dark:to-navy-deep border border-sky-200/80 dark:border-navy-soft rounded-2xl p-5 shadow-sm flex flex-col justify-between">
             <div className="space-y-4">
-              <div className="flex items-center gap-2.5 pb-3 border-b border-sky-200/60 dark:border-[#1a3366]">
+              <div className="flex items-center gap-2.5 pb-3 border-b border-sky-200/60 dark:border-navy-soft">
                 <div className="p-2 rounded-lg bg-blue-600 text-white shadow-xs">
                   <Info className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-[#0a1b44] dark:text-white">
+                  <h3 className="text-sm font-bold t-heading dark:text-white">
                     Understanding Process Trends
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-sky-300/70">
@@ -444,7 +493,7 @@ export const AnalysisView: React.FC = () => {
 
               {/* 5 Parameter Explanations */}
               <div className="space-y-2.5 text-xs">
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d1f47]/80 border border-sky-100 dark:border-[#1e3d78] shadow-xs">
+                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-sky-100 dark:border-industrial shadow-xs">
                   <div className="flex items-center gap-2 font-bold text-cyan-600 dark:text-cyan-400 mb-0.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400" />
                     <span>1. Tank Level:</span>
@@ -454,7 +503,7 @@ export const AnalysisView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d1f47]/80 border border-sky-100 dark:border-[#1e3d78] shadow-xs">
+                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-sky-100 dark:border-industrial shadow-xs">
                   <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400 mb-0.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     <span>2. Permeate Flow:</span>
@@ -464,7 +513,7 @@ export const AnalysisView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d1f47]/80 border border-sky-100 dark:border-[#1e3d78] shadow-xs">
+                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-sky-100 dark:border-industrial shadow-xs">
                   <div className="flex items-center gap-2 font-bold text-blue-600 dark:text-blue-400 mb-0.5">
                     <span className="w-2 h-2 rounded-full bg-blue-400" />
                     <span>3. RO Recovery:</span>
@@ -474,7 +523,7 @@ export const AnalysisView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d1f47]/80 border border-sky-100 dark:border-[#1e3d78] shadow-xs">
+                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-sky-100 dark:border-industrial shadow-xs">
                   <div className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400 mb-0.5">
                     <span className="w-2 h-2 rounded-full bg-amber-400" />
                     <span>4. Power Consumption:</span>
@@ -484,7 +533,7 @@ export const AnalysisView: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d1f47]/80 border border-sky-100 dark:border-[#1e3d78] shadow-xs">
+                <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-sky-100 dark:border-industrial shadow-xs">
                   <div className="flex items-center gap-2 font-bold text-purple-600 dark:text-purple-400 mb-0.5">
                     <span className="w-2 h-2 rounded-full bg-purple-400" />
                     <span>5. RO Feed Pressure:</span>
@@ -496,8 +545,8 @@ export const AnalysisView: React.FC = () => {
               </div>
 
               {/* What to observe */}
-              <div className="p-3 rounded-xl bg-sky-100/50 dark:bg-[#0b1c40] border border-sky-200/80 dark:border-[#1c3a70] text-xs">
-                <span className="font-bold text-[#0a1b44] dark:text-sky-300 block mb-1">
+              <div className="p-3 rounded-xl bg-sky-100/50 dark:bg-navy border border-sky-200/80 dark:border-industrial text-xs">
+                <span className="font-bold t-heading dark:text-sky-300 block mb-1">
                   What to observe:
                 </span>
                 <ul className="text-slate-600 dark:text-slate-300 space-y-1 text-[11px] list-disc list-inside">
@@ -511,10 +560,10 @@ export const AnalysisView: React.FC = () => {
             </div>
 
             {/* PHASE 4: Download Process Trends Report Button */}
-            <div className="pt-4 mt-3 border-t border-sky-200/60 dark:border-[#1a3366]">
+            <div className="pt-4 mt-3 border-t border-sky-200/60 dark:border-navy-soft">
               <button
                 onClick={handleDownloadTrends}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#0a1638] hover:bg-[#13255c] text-white font-semibold text-xs border border-[#1b3470] shadow-md flex items-center justify-center gap-2 transition cursor-pointer group"
+                className="w-full py-2.5 px-4 rounded-xl bg-navy hover:bg-navy-soft text-white font-semibold text-xs border border-industrial shadow-md flex items-center justify-center gap-2 transition cursor-pointer group"
               >
                 <Download className="w-4 h-4 text-cyan-400 transition-transform group-hover:translate-y-0.5" />
                 <span>Download Process Trends Report</span>

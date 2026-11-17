@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { CabinetOverview } from '../../components/modules/ControlPanel/CabinetOverview';
 import { WiringDiagram } from '../../components/modules/ControlPanel/WiringDiagram';
 import { IoMonitoring } from '../../components/modules/ControlPanel/IoMonitoring';
@@ -29,13 +30,13 @@ export const ControlPanelView: React.FC = () => {
       {/* Control Panel Title & Mode */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400">
+          <div className="p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400">
             <Layers className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                Control Panel Module — Electrical Layout & Wiring Visualization
+                Control Panel
               </h1>
               <SimulatedBadge verified={false} text="CHASSIS REFERENCE" />
             </div>
@@ -49,36 +50,57 @@ export const ControlPanelView: React.FC = () => {
         <div className="flex items-center gap-1 border border-slate-200 dark:border-slate-800 rounded-lg p-1 bg-slate-50 dark:bg-slate-850 text-xs">
           <button
             onClick={() => setActiveTab('cabinet')}
-            className={`px-3.5 py-1.5 font-medium rounded-md transition flex items-center gap-1.5 ${
+            className={`btn relative px-3.5 py-1.5 font-medium transition flex items-center gap-1.5 ${
               activeTab === 'cabinet'
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs'
+                ? 'text-cyan-700 dark:text-cyan-300'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Cabinet Overview (1-25)</span>
+            {activeTab === 'cabinet' && (
+              <motion.span
+                layoutId="cp-tab-indicator"
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="absolute inset-0 rounded-md bg-cyan-500/15 border border-cyan-500/30"
+              />
+            )}
+            <Layers className="relative w-3.5 h-3.5" />
+            <span className="relative">Cabinet Overview (1-25)</span>
           </button>
           <button
             onClick={() => setActiveTab('wiring')}
-            className={`px-3.5 py-1.5 font-medium rounded-md transition flex items-center gap-1.5 ${
+            className={`btn relative px-3.5 py-1.5 font-medium transition flex items-center gap-1.5 ${
               activeTab === 'wiring'
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs'
+                ? 'text-cyan-700 dark:text-cyan-300'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            <Workflow className="w-3.5 h-3.5" />
-            <span>Interactive Wiring Tracer</span>
+            {activeTab === 'wiring' && (
+              <motion.span
+                layoutId="cp-tab-indicator"
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="absolute inset-0 rounded-md bg-cyan-500/15 border border-cyan-500/30"
+              />
+            )}
+            <Workflow className="relative w-3.5 h-3.5" />
+            <span className="relative">Interactive Wiring Tracer</span>
           </button>
           <button
             onClick={() => setActiveTab('io')}
-            className={`px-3.5 py-1.5 font-medium rounded-md transition flex items-center gap-1.5 ${
+            className={`btn relative px-3.5 py-1.5 font-medium transition flex items-center gap-1.5 ${
               activeTab === 'io'
-                ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs'
+                ? 'text-cyan-700 dark:text-cyan-300'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Channel Terminals</span>
+            {activeTab === 'io' && (
+              <motion.span
+                layoutId="cp-tab-indicator"
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="absolute inset-0 rounded-md bg-cyan-500/15 border border-cyan-500/30"
+              />
+            )}
+            <Activity className="relative w-3.5 h-3.5" />
+            <span className="relative">Channel Terminals</span>
           </button>
         </div>
       </div>

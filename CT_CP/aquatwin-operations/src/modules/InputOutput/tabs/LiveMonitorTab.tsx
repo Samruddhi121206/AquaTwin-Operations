@@ -214,12 +214,19 @@ export const LiveMonitorTab: React.FC<LiveMonitorTabProps> = ({
                     <td className="py-3 px-4">
                       {isBool ? (
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-bold transition-colors duration-200 ${
                             tag.currentValue === true
                               ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30'
                               : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                           }`}
                         >
+                          <span
+                            className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                              tag.currentValue === true
+                                ? 'bg-emerald-500 shadow-[0_0_7px_2px_rgba(16,185,129,0.75)]'
+                                : 'bg-slate-400 dark:bg-slate-600'
+                            }`}
+                          />
                           {tag.currentValue === true ? 'ON' : 'OFF'}
                         </span>
                       ) : (

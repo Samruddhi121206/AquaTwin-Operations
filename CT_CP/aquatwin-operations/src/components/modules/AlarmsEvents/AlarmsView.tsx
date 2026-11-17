@@ -169,7 +169,7 @@ export const AlarmsView: React.FC = () => {
                   <tr
                     key={a.id}
                     className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors ${
-                      !a.acknowledged ? 'bg-slate-50/30 dark:bg-slate-800/20' : ''
+                      !a.acknowledged ? 'alarm-row-unack' : ''
                     }`}
                   >
                     <td className="py-3.5 px-4">

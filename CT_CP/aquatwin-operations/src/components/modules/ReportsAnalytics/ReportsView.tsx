@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlant } from '../../../context/PlantContext';
 import {
   Download,
@@ -25,6 +25,13 @@ import {
 } from 'recharts';
 
 export const ReportsView: React.FC = () => {
+
+  // Charts animate once on mount; live ticks update values without replaying the animation.
+  const [chartAnimate, setChartAnimate] = useState<boolean>(true);
+  useEffect(() => {
+    const t = setTimeout(() => setChartAnimate(false), 900);
+    return () => clearTimeout(t);
+  }, []);
   const { telemetry, productionHistory, qualityHistory } = usePlant();
   const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d'>('7d');
 
@@ -195,8 +202,12 @@ AquaTwin Operations Digital Twin ERP System
                   fontSize: '12px',
                 }}
               />
-              <Bar dataKey="rawM3" name="Raw Feed (m³)" fill="#64748b" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="permeateM3" name="Permeate (m³)" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+              <Bar
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800} dataKey="rawM3" name="Raw Feed (m³)" fill="#64748b" radius={[4, 4, 0, 0]} />
+              <Bar
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800} dataKey="permeateM3" name="Permeate (m³)" fill="#168BDB" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

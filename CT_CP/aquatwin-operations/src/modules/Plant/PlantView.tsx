@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { usePlant } from '../../context/PlantContext';
+import type { ModuleType } from '../../types/plant';
 import { PidDiagram } from '../../components/modules/LiveOperations/PidDiagram';
 import { LiveBottomTabs } from '../../components/modules/LiveOperations/LiveBottomTabs';
 import { DigitalTwinView } from '../../components/modules/DigitalTwin/DigitalTwinView';
@@ -21,75 +23,72 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
+type PlantTab = 'process' | 'simulation' | 'equipment' | 'maintenance' | 'alarms';
+
 interface SubTabNavProps {
-  plantTab: 'process' | 'simulation' | 'equipment' | 'maintenance' | 'alarms';
-  setPlantTab: (tab: 'process' | 'simulation' | 'equipment' | 'maintenance' | 'alarms') => void;
+  plantTab: PlantTab;
+  setPlantTab: (tab: PlantTab) => void;
   unackCount: number;
 }
 
-const SubTabNav: React.FC<SubTabNavProps> = ({ plantTab, setPlantTab, unackCount }) => (
-  <div className="flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 pb-2 text-xs overflow-x-auto">
-    <button
-      onClick={() => setPlantTab('process')}
-      className={`px-3 py-1.5 font-medium rounded-lg transition flex items-center gap-1.5 ${
-        plantTab === 'process'
-          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-semibold'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }`}
-    >
-      <Workflow className="w-3.5 h-3.5" />
-      <span>Skid Elevation</span>
-    </button>
-    <button
-      onClick={() => setPlantTab('simulation')}
-      className={`px-3 py-1.5 font-medium rounded-lg transition flex items-center gap-1.5 ${
-        plantTab === 'simulation'
-          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-semibold'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }`}
-    >
-      <Cpu className="w-3.5 h-3.5" />
-      <span>Dynamic Tank & Twin Physics</span>
-    </button>
-    <button
-      onClick={() => setPlantTab('equipment')}
-      className={`px-3 py-1.5 font-medium rounded-lg transition flex items-center gap-1.5 ${
-        plantTab === 'equipment'
-          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-semibold'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }`}
-    >
-      <Layers className="w-3.5 h-3.5" />
-      <span>Equipment Assets</span>
-    </button>
-    <button
-      onClick={() => setPlantTab('maintenance')}
-      className={`px-3 py-1.5 font-medium rounded-lg transition flex items-center gap-1.5 ${
-        plantTab === 'maintenance'
-          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-semibold'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }`}
-    >
-      <Wrench className="w-3.5 h-3.5" />
-      <span>Maintenance & Work Orders</span>
-    </button>
-    <button
-      onClick={() => setPlantTab('alarms')}
-      className={`px-3 py-1.5 font-medium rounded-lg transition flex items-center gap-1.5 ${
-        plantTab === 'alarms'
-          ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 font-semibold'
-          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-      }`}
-    >
-      <AlertTriangle className="w-3.5 h-3.5" />
-      <span>Active Alarms ({unackCount})</span>
-    </button>
-  </div>
-);
+const SubTabNav: React.FC<SubTabNavProps> = ({ plantTab, setPlantTab, unackCount }) => {
+  const tabs: { key: PlantTab; icon: typeof Workflow; label: string }[] = [
+    { key: 'process', icon: Workflow, label: 'Skid Elevation' },
+    { key: 'simulation', icon: Cpu, label: 'Tank & Twin Physics' },
+    { key: 'equipment', icon: Layers, label: 'Equipment Assets' },
+    { key: 'maintenance', icon: Wrench, label: 'Maintenance' },
+    { key: 'alarms', icon: AlertTriangle, label: `Alarms (${unackCount})` },
+  ];
+
+  return (
+    <div className="flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 pb-2 text-xs overflow-x-auto">
+      {tabs.map(({ key, icon: Icon, label }) => (
+        <button
+          key={key}
+          onClick={() => setPlantTab(key)}
+          className={`btn relative px-3 py-1.5 font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
+            plantTab === key
+              ? 'text-cyan-700 dark:text-cyan-300 font-semibold'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+          }`}
+        >
+          {plantTab === key && (
+            <motion.span
+              layoutId="plant-tab-indicator"
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className="absolute inset-0 rounded-lg bg-cyan-500/15 border border-cyan-500/30"
+            />
+          )}
+          <Icon className="relative w-3.5 h-3.5" />
+          <span className="relative">{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+const plantTabForModule = (m: ModuleType): PlantTab => {
+  switch (m) {
+    case 'alarms':
+      return 'alarms';
+    case 'equipment':
+      return 'equipment';
+    case 'maintenance':
+      return 'maintenance';
+    case 'twin':
+      return 'simulation';
+    default:
+      return 'process';
+  }
+};
 
 export const PlantView: React.FC = () => {
-  const { alarms } = usePlant();
-  const [plantTab, setPlantTab] = useState<'process' | 'simulation' | 'equipment' | 'maintenance' | 'alarms'>('process');
+  const { alarms, activeModule } = usePlant();
+  const [plantTab, setPlantTab] = useState<PlantTab>(() => plantTabForModule(activeModule));
+
+  useEffect(() => {
+    setPlantTab(plantTabForModule(activeModule));
+  }, [activeModule]);
   const [showBottomDiagnostics, setShowBottomDiagnostics] = useState<boolean>(false);
 
   const unackAlarms = alarms.filter((a) => !a.acknowledged);
@@ -104,46 +103,8 @@ export const PlantView: React.FC = () => {
 
           {/* Secondary Diagnostics Drawer & Module Tabs */}
           <div className="flex items-center justify-between px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs shadow-xs">
-            <div className="flex items-center gap-2 overflow-x-auto">
-              <button
-                onClick={() => setPlantTab('process')}
-                className="px-3 py-1 font-semibold rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5"
-              >
-                <Workflow className="w-3.5 h-3.5" />
-                <span>Skid Elevation</span>
-              </button>
-
-              <button
-                onClick={() => setPlantTab('simulation')}
-                className="px-3 py-1 font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5 transition"
-              >
-                <Cpu className="w-3.5 h-3.5" />
-                <span>Tank & Twin Physics</span>
-              </button>
-
-              <button
-                onClick={() => setPlantTab('equipment')}
-                className="px-3 py-1 font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5 transition"
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Equipment Assets</span>
-              </button>
-
-              <button
-                onClick={() => setPlantTab('maintenance')}
-                className="px-3 py-1 font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5 transition"
-              >
-                <Wrench className="w-3.5 h-3.5" />
-                <span>Maintenance</span>
-              </button>
-
-              <button
-                onClick={() => setPlantTab('alarms')}
-                className="px-3 py-1 font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5 transition"
-              >
-                <AlertTriangle className="w-3.5 h-3.5" />
-                <span>Alarms ({unackAlarms.length})</span>
-              </button>
+            <div className="flex-1 min-w-0 [&>div]:border-b-0 [&>div]:pb-0">
+              <SubTabNav plantTab={plantTab} setPlantTab={setPlantTab} unackCount={unackAlarms.length} />
             </div>
 
             <button

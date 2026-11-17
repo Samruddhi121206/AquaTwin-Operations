@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlant } from '../../../context/PlantContext';
 import { generateEnergyTrends } from '../../../modules/Analysis/sampleData';
 import {
@@ -31,6 +31,13 @@ import {
 } from 'recharts';
 
 export const EnergyView: React.FC = () => {
+
+  // Charts animate once on mount; live ticks update values without replaying the animation.
+  const [chartAnimate, setChartAnimate] = useState<boolean>(true);
+  useEffect(() => {
+    const t = setTimeout(() => setChartAnimate(false), 900);
+    return () => clearTimeout(t);
+  }, []);
   const { telemetry, theme } = usePlant();
   const [energyTrends] = useState(() => generateEnergyTrends(24));
 
@@ -38,9 +45,9 @@ export const EnergyView: React.FC = () => {
 
   // Energy breakdown by equipment
   const powerData = [
-    { name: 'P-202 (HP Pump)', powerKw: telemetry.p202_powerKw, color: '#6366f1' },
-    { name: 'P-201 (Booster)', powerKw: telemetry.p201_powerKw, color: '#06b6d4' },
-    { name: 'P-101 (Feed)', powerKw: telemetry.p101_powerKw, color: '#3b82f6' },
+    { name: 'P-202 (HP Pump)', powerKw: telemetry.p202_powerKw, color: '#A8DAFB' },
+    { name: 'P-201 (Booster)', powerKw: telemetry.p201_powerKw, color: '#168BDB' },
+    { name: 'P-101 (Feed)', powerKw: telemetry.p101_powerKw, color: '#6ACBFA' },
     { name: 'CD-201 & Controls', powerKw: 0.8, color: '#10b981' },
   ];
 
@@ -131,7 +138,7 @@ export const EnergyView: React.FC = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={powerData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1B3A66' : '#D3E4F5'} opacity={0.6} />
                 <XAxis dataKey="name" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} />
                 <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} />
                 <Tooltip
@@ -143,7 +150,9 @@ export const EnergyView: React.FC = () => {
                   }}
                   formatter={(val: any) => [`${val} kW`, 'Active Power']}
                 />
-                <Bar dataKey="powerKw" radius={[6, 6, 0, 0]}>
+                <Bar
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800} dataKey="powerKw" radius={[6, 6, 0, 0]}>
                   {powerData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
@@ -174,7 +183,7 @@ export const EnergyView: React.FC = () => {
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={energyTrends} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1B3A66' : '#D3E4F5'} opacity={0.6} />
                 <XAxis dataKey="timestamp" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} />
                 <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={10} tickLine={false} domain={['auto', 'auto']} />
                 <Tooltip
@@ -187,18 +196,22 @@ export const EnergyView: React.FC = () => {
                 />
                 <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} />
                 <Line
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                   type="monotone"
                   dataKey="secKwhM3"
                   name="SEC (kWh/m³)"
-                  stroke="#6366f1"
+                  stroke="#A8DAFB"
                   strokeWidth={2.2}
                   dot={{ r: 2 }}
                 />
                 <Line
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                   type="monotone"
                   dataKey="totalPowerKw"
                   name="Active Power (kW)"
-                  stroke="#06b6d4"
+                  stroke="#168BDB"
                   strokeWidth={2}
                   dot={false}
                 />

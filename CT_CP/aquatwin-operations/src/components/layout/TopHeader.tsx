@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePlant } from '../../context/PlantContext';
 import {
   Bell,
@@ -27,14 +27,22 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const { setActiveModule, alarms, activeScenario, applyScenario, theme, toggleTheme } = usePlant();
   const unreadAlarms = alarms.filter((a) => !a.acknowledged);
 
+  // Shake the bell once each time a new alarm arrives (remount restarts the CSS animation).
+  const [shakeKey, setShakeKey] = useState<number>(0);
+  const prevCount = useRef<number>(alarms.length);
+  useEffect(() => {
+    if (alarms.length > prevCount.current) setShakeKey((k) => k + 1);
+    prevCount.current = alarms.length;
+  }, [alarms.length]);
+
   return (
-    <header className="h-14 bg-[#0a1128] border-b border-[#162544] px-4 sm:px-5 flex items-center justify-between gap-4 shrink-0 z-20 text-white shadow-md select-none">
+    <header className="nav-surface nav-border-b h-14 px-4 sm:px-5 flex items-center justify-between gap-4 shrink-0 z-20 shadow-md select-none">
       {/* Zone 1: Clickable AquaTwin Logo (Toggles Sidebar) & Scenario Preset */}
       <div className="flex items-center gap-4">
         {/* Clickable AquaTwin Logo to Open / Close Sidebar */}
         <button
           onClick={onToggleSidebar}
-          className="flex items-center gap-2.5 p-1 -ml-1 rounded-lg hover:bg-[#132247] transition group cursor-pointer focus:outline-hidden"
+          className="nav-item flex items-center gap-2.5 p-1 -ml-1 rounded-lg transition group cursor-pointer"
           title={isSidebarOpen ? 'Close Navigation Sidebar' : 'Open Navigation Sidebar'}
           aria-label="Toggle navigation menu"
         >
@@ -42,10 +50,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             <Droplets className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-bold tracking-tight text-white leading-tight">
+            <span className="nav-text text-sm font-bold tracking-tight leading-tight">
               AquaTwin
             </span>
-            <div className="text-sky-400/80 group-hover:text-cyan-400 transition-colors">
+            <div className="nav-muted transition-colors">
               {isSidebarOpen ? (
                 <PanelLeftClose className="w-3.5 h-3.5" />
               ) : (
@@ -55,32 +63,32 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           </div>
         </button>
 
-        <div className="h-4 w-px bg-[#1e3366] hidden sm:block" />
+        <div className="h-4 w-px hidden sm:block" style={{ backgroundColor: 'var(--nav-border)' }} />
 
         {/* Quick Scenario Preset Dropdown */}
-        <div className="flex items-center gap-2 bg-[#0f1d3d] px-2.5 sm:px-3 py-1.5 rounded-lg border border-[#1e3366] text-xs shadow-xs">
+        <div className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg border text-xs shadow-xs" style={{ backgroundColor: 'var(--nav-active-bg)', borderColor: 'var(--nav-border)' }}>
           <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span className="text-[11px] text-sky-200/90 font-semibold tracking-wide hidden sm:inline">
+          <span className="nav-muted text-[11px] font-semibold tracking-wide hidden sm:inline">
             Scenario:
           </span>
           <select
             value={activeScenario}
             onChange={(e) => applyScenario(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-1"
+            className="nav-text bg-transparent text-xs font-semibold cursor-pointer pr-1"
           >
-            <option value="baseline" className="bg-[#0a1128] text-white">
+            <option value="baseline" style={{ backgroundColor: 'var(--bg-nav)', color: 'var(--nav-text)' }}>
               Nominal Steady State
             </option>
-            <option value="salinity_spike" className="bg-[#0a1128] text-white">
+            <option value="salinity_spike" style={{ backgroundColor: 'var(--bg-nav)', color: 'var(--nav-text)' }}>
               High Feed Salinity Spike
             </option>
-            <option value="filter_fouling" className="bg-[#0a1128] text-white">
+            <option value="filter_fouling" style={{ backgroundColor: 'var(--bg-nav)', color: 'var(--nav-text)' }}>
               Cartridge F-201 Fouling
             </option>
-            <option value="pump_trip" className="bg-[#0a1128] text-white">
+            <option value="pump_trip" style={{ backgroundColor: 'var(--bg-nav)', color: 'var(--nav-text)' }}>
               P-202 HP Pump Trip
             </option>
-            <option value="high_recovery" className="bg-[#0a1128] text-white">
+            <option value="high_recovery" style={{ backgroundColor: 'var(--bg-nav)', color: 'var(--nav-text)' }}>
               Maximum Recovery Mode (80%)
             </option>
           </select>
@@ -92,12 +100,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-sky-300 hover:text-white hover:bg-[#132247] border border-transparent hover:border-[#1e3366] transition cursor-pointer"
+          className="nav-item btn p-2 rounded-lg border border-transparent transition cursor-pointer"
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Theme`}
           aria-label="Toggle theme"
         >
           {theme === 'light' ? (
-            <Moon className="w-4 h-4 text-sky-300 hover:text-cyan-300 transition-colors" />
+            <Moon className="w-4 h-4 transition-colors" />
           ) : (
             <Sun className="w-4 h-4 text-amber-400 hover:text-amber-300 transition-colors" />
           )}
@@ -106,11 +114,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {/* Alarm Notification Button */}
         <button
           onClick={() => setActiveModule('alarms')}
-          className="relative p-2 rounded-lg text-sky-300 hover:text-white hover:bg-[#132247] border border-transparent hover:border-[#1e3366] transition cursor-pointer"
+          className="nav-item btn relative p-2 rounded-lg border border-transparent transition cursor-pointer"
           title={`${unreadAlarms.length} Unacknowledged Alarms`}
           aria-label="Alarm notifications"
         >
-          <Bell className="w-4 h-4 text-sky-300" />
+          <Bell key={shakeKey} className={`w-4 h-4 ${shakeKey > 0 ? 'bell-shake' : ''}`} />
           {unreadAlarms.length > 0 && (
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 animate-ping" />
           )}

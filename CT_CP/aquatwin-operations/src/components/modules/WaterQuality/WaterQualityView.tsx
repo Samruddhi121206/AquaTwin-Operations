@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlant } from '../../../context/PlantContext';
 import { generateWaterQualityTrends, WaterQualityTrendPoint } from '../../../modules/Analysis/sampleData';
 import {
@@ -30,6 +30,13 @@ import {
 } from 'recharts';
 
 export const WaterQualityView: React.FC = () => {
+
+  // Charts animate once on mount; live ticks update values without replaying the animation.
+  const [chartAnimate, setChartAnimate] = useState<boolean>(true);
+  useEffect(() => {
+    const t = setTimeout(() => setChartAnimate(false), 900);
+    return () => clearTimeout(t);
+  }, []);
   const { telemetry, theme } = usePlant();
   const [selectedLocation, setSelectedLocation] = useState<'permeate' | 'raw' | 'reject'>('permeate');
 
@@ -89,8 +96,8 @@ export const WaterQualityView: React.FC = () => {
   ];
 
   const seriesMeta: Record<string, { label: string; unit: string; color: string }> = {
-    tdsMgL: { label: 'Permeate TDS', unit: 'mg/L', color: '#06b6d4' },
-    conductivityUsCm: { label: 'Conductivity', unit: 'µS/cm', color: '#6366f1' },
+    tdsMgL: { label: 'Permeate TDS', unit: 'mg/L', color: '#168BDB' },
+    conductivityUsCm: { label: 'Conductivity', unit: 'µS/cm', color: '#A8DAFB' },
     ph: { label: 'pH Level', unit: '', color: '#10b981' },
     turbidityNtu: { label: 'Turbidity', unit: 'NTU', color: '#f59e0b' },
   };
@@ -110,8 +117,8 @@ export const WaterQualityView: React.FC = () => {
     };
 
     return (
-      <div className="bg-white dark:bg-[#0a1128] border border-slate-200 dark:border-[#1e3366] rounded-xl p-2.5 shadow-lg text-xs font-sans min-w-[150px]">
-        <div className="text-[10px] text-slate-400 font-mono pb-1 mb-1.5 border-b border-slate-100 dark:border-[#182952]">
+      <div className="bg-white dark:bg-navy-deep border border-slate-200 dark:border-navy-soft rounded-xl p-2.5 shadow-lg text-xs font-sans min-w-[150px]">
+        <div className="text-[10px] text-slate-400 font-mono pb-1 mb-1.5 border-b border-slate-100 dark:border-navy-soft">
           Time: <span className="font-bold text-slate-700 dark:text-slate-200">{label}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -245,12 +252,12 @@ export const WaterQualityView: React.FC = () => {
                 <AreaChart data={qualityTrends} margin={{ top: 10, right: 15, left: 0, bottom: 15 }}>
                   <defs>
                     <linearGradient id="colorTds" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#168BDB" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#168BDB" stopOpacity={0.0} />
                     </linearGradient>
                     <linearGradient id="colorCond" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0} />
+                      <stop offset="5%" stopColor="#A8DAFB" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#A8DAFB" stopOpacity={0.0} />
                     </linearGradient>
                     <linearGradient id="colorPh" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
@@ -262,7 +269,7 @@ export const WaterQualityView: React.FC = () => {
                     </linearGradient>
                   </defs>
 
-                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#334155' : '#e2e8f0'} opacity={0.6} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1B3A66' : '#D3E4F5'} opacity={0.6} />
 
                   {/* PHASE 2: Clear X-Axis Label */}
                   <XAxis
@@ -306,14 +313,16 @@ export const WaterQualityView: React.FC = () => {
 
                   {/* 1. TDS */}
                   <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                     type="monotone"
                     dataKey="tdsMgL"
                     name="Permeate TDS (mg/L)"
-                    stroke="#06b6d4"
+                    stroke="#168BDB"
                     strokeWidth={2.2}
                     fillOpacity={1}
                     fill="url(#colorTds)"
-                    dot={{ r: 2, fill: '#fff', stroke: '#06b6d4', strokeWidth: 1.5 }}
+                    dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#168BDB', strokeWidth: 1.5 }}
                     activeDot={{ r: 5 }}
                     onMouseEnter={() => setHoveredSeries('tdsMgL')}
                     onMouseLeave={() => setHoveredSeries(null)}
@@ -321,14 +330,16 @@ export const WaterQualityView: React.FC = () => {
 
                   {/* 2. Conductivity */}
                   <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                     type="monotone"
                     dataKey="conductivityUsCm"
                     name="Conductivity (µS/cm)"
-                    stroke="#6366f1"
+                    stroke="#A8DAFB"
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorCond)"
-                    dot={{ r: 2, fill: '#fff', stroke: '#6366f1', strokeWidth: 1.5 }}
+                    dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#A8DAFB', strokeWidth: 1.5 }}
                     activeDot={{ r: 5 }}
                     onMouseEnter={() => setHoveredSeries('conductivityUsCm')}
                     onMouseLeave={() => setHoveredSeries(null)}
@@ -336,6 +347,8 @@ export const WaterQualityView: React.FC = () => {
 
                   {/* 3. pH */}
                   <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                     type="monotone"
                     dataKey="ph"
                     name="pH Level"
@@ -343,7 +356,7 @@ export const WaterQualityView: React.FC = () => {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorPh)"
-                    dot={{ r: 2, fill: '#fff', stroke: '#10b981', strokeWidth: 1.5 }}
+                    dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#10b981', strokeWidth: 1.5 }}
                     activeDot={{ r: 5 }}
                     onMouseEnter={() => setHoveredSeries('ph')}
                     onMouseLeave={() => setHoveredSeries(null)}
@@ -351,6 +364,8 @@ export const WaterQualityView: React.FC = () => {
 
                   {/* 4. Turbidity */}
                   <Area
+                      isAnimationActive={chartAnimate}
+                      animationDuration={800}
                     type="monotone"
                     dataKey="turbidityNtu"
                     name="Turbidity (NTU)"
@@ -358,7 +373,7 @@ export const WaterQualityView: React.FC = () => {
                     strokeWidth={1.8}
                     fillOpacity={1}
                     fill="url(#colorTurbidity)"
-                    dot={{ r: 2, fill: '#fff', stroke: '#f59e0b', strokeWidth: 1.5 }}
+                    dot={{ r: 2, fill: isDark ? '#0F2647' : '#fff', stroke: '#f59e0b', strokeWidth: 1.5 }}
                     activeDot={{ r: 5 }}
                     onMouseEnter={() => setHoveredSeries('turbidityNtu')}
                     onMouseLeave={() => setHoveredSeries(null)}
@@ -375,14 +390,14 @@ export const WaterQualityView: React.FC = () => {
         </div>
 
         {/* Right: PHASE 5 Information Panel (45% width -> col-span-12 lg:col-span-5) */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/30 dark:from-[#081a33] dark:via-[#0a1e3d] dark:to-[#061226] border border-cyan-200/80 dark:border-[#1a3a66] rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-5 bg-gradient-to-br from-white via-sky-50/40 to-cyan-50/30 dark:from-navy dark:via-navy dark:to-navy-deep border border-cyan-200/80 dark:border-navy-soft rounded-2xl p-5 shadow-sm flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center gap-2.5 pb-3 border-b border-cyan-200/60 dark:border-[#1a3a66]">
+            <div className="flex items-center gap-2.5 pb-3 border-b border-cyan-200/60 dark:border-navy-soft">
               <div className="p-2 rounded-lg bg-cyan-600 text-white shadow-xs">
                 <Info className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-[#0a1b44] dark:text-white">
+                <h3 className="text-sm font-bold t-heading dark:text-white">
                   Understanding Water Quality
                 </h3>
                 <p className="text-[11px] text-slate-500 dark:text-sky-300/70">
@@ -393,7 +408,7 @@ export const WaterQualityView: React.FC = () => {
 
             {/* 4 Parameter Explanations */}
             <div className="space-y-2.5 text-xs">
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d2247]/80 border border-cyan-100 dark:border-[#1e4278] shadow-xs">
+              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-cyan-100 dark:border-industrial shadow-xs">
                 <div className="flex items-center gap-2 font-bold text-cyan-600 dark:text-cyan-400 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-cyan-400" />
                   <span>1. TDS (Total Dissolved Solids):</span>
@@ -403,7 +418,7 @@ export const WaterQualityView: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d2247]/80 border border-cyan-100 dark:border-[#1e4278] shadow-xs">
+              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-cyan-100 dark:border-industrial shadow-xs">
                 <div className="flex items-center gap-2 font-bold text-indigo-600 dark:text-indigo-400 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-indigo-400" />
                   <span>2. Conductivity:</span>
@@ -413,7 +428,7 @@ export const WaterQualityView: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d2247]/80 border border-cyan-100 dark:border-[#1e4278] shadow-xs">
+              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-cyan-100 dark:border-industrial shadow-xs">
                 <div className="flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400" />
                   <span>3. pH Level:</span>
@@ -423,7 +438,7 @@ export const WaterQualityView: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0d2247]/80 border border-cyan-100 dark:border-[#1e4278] shadow-xs">
+              <div className="p-2.5 rounded-xl bg-white/80 dark:bg-navy/80 border border-cyan-100 dark:border-industrial shadow-xs">
                 <div className="flex items-center gap-2 font-bold text-amber-600 dark:text-amber-400 mb-0.5">
                   <span className="w-2 h-2 rounded-full bg-amber-400" />
                   <span>4. Turbidity:</span>
@@ -435,8 +450,8 @@ export const WaterQualityView: React.FC = () => {
             </div>
 
             {/* Why it matters */}
-            <div className="p-3 rounded-xl bg-cyan-100/50 dark:bg-[#0a1f40] border border-cyan-200/80 dark:border-[#1b3e70] text-xs">
-              <span className="font-bold text-[#0a1b44] dark:text-cyan-300 block mb-1">
+            <div className="p-3 rounded-xl bg-cyan-100/50 dark:bg-navy border border-cyan-200/80 dark:border-industrial text-xs">
+              <span className="font-bold t-heading dark:text-cyan-300 block mb-1">
                 Why it matters:
               </span>
               <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
@@ -446,10 +461,10 @@ export const WaterQualityView: React.FC = () => {
           </div>
 
           {/* PHASE 5: Download Water Quality Report Button */}
-          <div className="pt-4 mt-3 border-t border-cyan-200/60 dark:border-[#1a3a66]">
+          <div className="pt-4 mt-3 border-t border-cyan-200/60 dark:border-navy-soft">
             <button
               onClick={handleDownloadQuality}
-              className="w-full py-2.5 px-4 rounded-xl bg-[#0a1638] hover:bg-[#13255c] text-white font-semibold text-xs border border-[#1b3470] shadow-md flex items-center justify-center gap-2 transition cursor-pointer group"
+              className="w-full py-2.5 px-4 rounded-xl bg-navy hover:bg-navy-soft text-white font-semibold text-xs border border-industrial shadow-md flex items-center justify-center gap-2 transition cursor-pointer group"
             >
               <Download className="w-4 h-4 text-cyan-400 transition-transform group-hover:translate-y-0.5" />
               <span>Download Water Quality Report</span>

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
 import { useRuntimeMode } from '../../context/RuntimeModeContext';
 import { usePlant } from '../../context/PlantContext';
 import { ModeBanner } from '../../components/shared/ModeBanner';
@@ -145,9 +146,9 @@ export const IOView: React.FC = () => {
   const simulation = plcHealth.mode === 'VIRTUAL';
 
   return (
-    <div className="space-y-0 border border-slate-400 bg-slate-100 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+    <div className="space-y-0 overflow-hidden rounded-xl border border-sky/40 bg-white text-slate-900 shadow-sm dark:border-navy-soft dark:bg-navy dark:text-slate-100">
       {/* GX Works3-style title bar */}
-      <div className="flex flex-wrap items-center gap-3 bg-gradient-to-b from-[#1b4f9c] to-[#0f3a7a] px-3 py-1.5 text-xs text-white">
+      <div className="flex flex-wrap items-center gap-3 nav-surface px-3 py-1.5 text-xs text-white">
         <span className="font-bold">AquaTwin Engineering</span>
         <span className="opacity-60">|</span>
         <span>Input / Output - {tabTitleMap[activeTab]}</span>
@@ -159,17 +160,24 @@ export const IOView: React.FC = () => {
       <ConnectionStrip protocol={deviceConfig.protocol} />
 
       {/* Document tabs */}
-      <div className="flex overflow-x-auto border-b border-slate-400 bg-slate-200 px-1 pt-1 dark:border-slate-600 dark:bg-slate-800">
+      <div className="relative flex overflow-x-auto border-b border-sky/40 bg-tint px-1 pt-1 dark:border-navy-soft dark:bg-navy-soft/50">
         {TABS.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`flex items-center gap-1.5 whitespace-nowrap border border-b-0 px-3 py-1.5 text-xs ${
+            className={`btn relative flex items-center gap-1.5 whitespace-nowrap rounded-t-lg px-3 py-1.5 text-xs transition-colors ${
               activeTab === key
-                ? 'border-slate-400 bg-white font-semibold text-[#0f3a7a] dark:border-slate-600 dark:bg-slate-900 dark:text-blue-300'
-                : 'border-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                ? 'bg-white font-semibold text-primary dark:bg-navy dark:text-sky'
+                : 'text-slate-600 hover:bg-white/60 dark:text-slate-400 dark:hover:bg-navy/60'
             }`}
           >
+            {activeTab === key && (
+              <motion.span
+                layoutId="io-tab-indicator"
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary"
+              />
+            )}
             <Icon className="h-3.5 w-3.5" />
             {label}
           </button>

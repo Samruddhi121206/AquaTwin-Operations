@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 export const CabinetOverview: React.FC = () => {
-  const [cabinetViewMode, setCabinetViewMode] = useState<'CAD' | 'PHOTO' | 'BLUEPRINT'>('CAD');
+  const [cabinetViewMode, setCabinetViewMode] = useState<'CAD' | 'PHOTO' | 'BLUEPRINT'>('PHOTO');
   const [doorOpen, setDoorOpen] = useState<boolean>(true);
   const [selectedCallout, setSelectedCallout] = useState<PanelComponent | null>(
     PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 21) || PANEL_CALLOUTS_25[0]
@@ -151,7 +151,7 @@ export const CabinetOverview: React.FC = () => {
                   onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 19) || null)}
                   className="p-2 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-cyan-500 text-left transition"
                 >
-                  <div className="font-bold text-amber-500 text-[11px]">TIER 1 (TOP)</div>
+                  <div className="font-bold text-cyan-500 text-[11px]">TIER 1 (TOP)</div>
                   <div className="text-[10px] text-slate-600 dark:text-slate-400">Breakers & MPCBs</div>
                 </button>
                 <button
@@ -178,18 +178,20 @@ export const CabinetOverview: React.FC = () => {
               </div>
 
               {/* High-Resolution Cabinet Interior Photo Container */}
-              <div className="relative rounded-lg overflow-hidden border-2 border-slate-700 bg-black shadow-2xl flex items-center justify-center">
+              <div className="rounded-lg overflow-hidden border-2 border-slate-700 bg-black shadow-2xl flex items-center justify-center">
+                {/* Wrapper hugs the image so overlay badge percentages track the photo, not the letterboxed container */}
+                <div className="relative">
                 <img
-                  src="/assets/cabinet/real_electrical_panel_interior.jpg"
+                  src="/assets/cabinet/realistic_industrial_cabinet.jpg"
                   alt="Industrial Electrical Control Panel Interior"
-                  className="w-full h-auto max-h-[620px] object-contain rounded"
+                  className="block w-auto h-auto max-h-[620px] rounded"
                 />
 
                 {/* Interactive Overlay Badges across Tiers */}
                 {showCalloutBadges && (
                   <div className="absolute inset-0 pointer-events-none">
                     {/* Tier 1 Badge */}
-                    <div className="absolute top-[8%] left-[20%] pointer-events-auto">
+                    <div className="absolute top-[13%] left-[8%] pointer-events-auto">
                       <button
                         onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 19) || null)}
                         className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
@@ -200,7 +202,7 @@ export const CabinetOverview: React.FC = () => {
                     </div>
 
                     {/* Tier 2 Contactors Badge */}
-                    <div className="absolute top-[28%] left-[20%] pointer-events-auto">
+                    <div className="absolute top-[47%] left-[9%] pointer-events-auto">
                       <button
                         onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 18) || null)}
                         className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
@@ -211,7 +213,7 @@ export const CabinetOverview: React.FC = () => {
                     </div>
 
                     {/* Tier 2 Pilz Safety Relay Badge */}
-                    <div className="absolute top-[28%] left-[62%] pointer-events-auto">
+                    <div className="absolute top-[48%] left-[63%] pointer-events-auto">
                       <button
                         onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 20) || null)}
                         className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
@@ -222,7 +224,7 @@ export const CabinetOverview: React.FC = () => {
                     </div>
 
                     {/* Tier 3 PLC Rack Badge */}
-                    <div className="absolute top-[52%] left-[18%] pointer-events-auto">
+                    <div className="absolute top-[24%] left-[39%] pointer-events-auto">
                       <button
                         onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 6) || null)}
                         className="px-2 py-0.5 rounded bg-cyan-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
@@ -233,7 +235,7 @@ export const CabinetOverview: React.FC = () => {
                     </div>
 
                     {/* Tier 3 SITOP PSU Badge */}
-                    <div className="absolute top-[52%] left-[68%] pointer-events-auto">
+                    <div className="absolute top-[24%] left-[74%] pointer-events-auto">
                       <button
                         onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 21) || null)}
                         className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
@@ -244,7 +246,7 @@ export const CabinetOverview: React.FC = () => {
                     </div>
 
                     {/* Tier 4 Terminal Strip X1 Badge */}
-                    <div className="absolute bottom-[10%] left-[45%] pointer-events-auto">
+                    <div className="absolute top-[70%] left-[11%] pointer-events-auto">
                       <button
                         onClick={() => setSelectedCallout(PANEL_CALLOUTS_25.find((c) => c.calloutNumber === 22) || null)}
                         className="px-2 py-0.5 rounded bg-emerald-600 text-white font-mono font-bold text-[10px] shadow-lg border border-white/40 hover:scale-110 transition flex items-center gap-1"
@@ -255,6 +257,7 @@ export const CabinetOverview: React.FC = () => {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           ) : cabinetViewMode === 'BLUEPRINT' ? (
@@ -306,7 +309,7 @@ export const CabinetOverview: React.FC = () => {
               {/* Door Front Controls Container */}
               <div className="flex items-start justify-between h-full pt-8">
                 {/* Left Glass Window / Inspection Aperture */}
-                <div className="w-[48%] h-[380px] rounded border-2 border-slate-400 dark:border-slate-700 bg-cyan-950/20 backdrop-blur-xs p-3 flex flex-col justify-between shadow-inner">
+                <div className="w-[48%] h-[380px] rounded border-2 border-slate-400 dark:border-slate-700 bg-cyan-950/20 p-3 flex flex-col justify-between shadow-inner">
                   <div className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400/80 uppercase">
                     Chassis Inspection Window
                   </div>
@@ -446,7 +449,7 @@ export const CabinetOverview: React.FC = () => {
               <div className="p-3 bg-slate-200/70 dark:bg-slate-900/90 rounded-lg border border-slate-300 dark:border-slate-800">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-300 dark:border-slate-800 text-[11px]">
                   <span className="font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-amber-500" />
+                    <Zap className="w-3.5 h-3.5 text-cyan-500" />
                     DIN Rail Tier 1: Protection & Breakers (Zone Z1)
                   </span>
                   <span className="text-[10px] font-mono text-slate-500">

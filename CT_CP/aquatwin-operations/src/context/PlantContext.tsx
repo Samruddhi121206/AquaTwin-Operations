@@ -63,6 +63,13 @@ interface PlantContextType {
   productionHistory: { timestamp: string; permeateM3h: number; powerKw: number; recoveryPercent: number }[];
 }
 
+// Monotonic per-prefix counter: Date.now() collides when several records are created in one tick.
+const idCounters: Record<string, number> = {};
+const nextId = (prefix: string): string => {
+  idCounters[prefix] = (idCounters[prefix] ?? 0) + 1;
+  return `${prefix}-${idCounters[prefix].toString().padStart(4, '0')}`;
+};
+
 const INITIAL_TELEMETRY: PlantTelemetry = {
   tk101: {
     tag: 'TK-101',
@@ -533,7 +540,7 @@ export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addAuditLog = useCallback((entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
     const newLog: AuditLogEntry = {
       ...entry,
-      id: `AUD-${Date.now().toString().slice(-4)}`,
+      id: nextId('AUD'),
       timestamp: new Date().toLocaleTimeString(),
     };
     setAuditLogs((prev) => [newLog, ...prev.slice(0, 49)]);
@@ -663,6 +670,14 @@ export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const applyScenario = (scenarioId: string) => {
     setActiveScenario(scenarioId);
+
+    // Clear effects left by any previously applied scenario before applying the new one.
+    setTelemetry((prev) => ({
+      ...prev,
+      p202_running: true,
+      v201_rejectValvePercent: INITIAL_TELEMETRY.v201_rejectValvePercent,
+    }));
+
     let overrides: Partial<DigitalTwinScenario> = {};
     if (scenarioId === 'salinity_spike') {
       overrides = { feedTdsMultiplier: 1.8, chemicalDosingMultiplier: 1.4 };
@@ -741,7 +756,7 @@ export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const createWorkOrder = (order: Omit<WorkOrderItem, 'id' | 'createdDate'>) => {
     const newOrder: WorkOrderItem = {
       ...order,
-      id: `WO-${Date.now().toString().slice(-4)}`,
+      id: nextId('WO'),
       createdDate: new Date().toISOString().split('T')[0],
     };
     setWorkOrders((prev) => [newOrder, ...prev]);
@@ -1004,7 +1019,7 @@ export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (t.f201_dpBar >= 0.7) {
       if (!alarms.some((a) => a.tag === 'F-201' && a.severity === 'critical')) {
         newAlarms.push({
-          id: `ALM-${Date.now().toString().slice(-4)}`,
+          id: nextId('ALM'),
           tag: 'F-201',
           equipmentName: '5-Micron Guard Filter',
           message: `CRITICAL: Cartridge DP exceeded emergency threshold (${t.f201_dpBar} bar >= 0.70 bar)`,
@@ -1022,7 +1037,7 @@ export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (t.tk101.currentLevelPercent <= 20.0) {
       if (!alarms.some((a) => a.tag === 'TK-101' && a.category === 'level')) {
         newAlarms.push({
-          id: `ALM-${Date.now().toString().slice(-4)}`,
+          id: nextId('ALM'),
           tag: 'TK-101',
           equipmentName: 'Raw Water Tank',
           message: `WARNING: Low tank level (${t.tk101.currentLevelPercent}%). Risk of feed pump suction cavitation.`,
@@ -1040,7 +1055,7 @@ export const PlantProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (t.permeateQuality.tdsMgL > 45) {
       if (!alarms.some((a) => a.tag === 'RO-201' && a.category === 'quality')) {
         newAlarms.push({
-          id: `ALM-${Date.now().toString().slice(-4)}`,
+          id: nextId('ALM'),
           tag: 'RO-201',
           equipmentName: 'RO Membrane Rack',
           message: `WARNING: Permeate TDS breakthrough (${t.permeateQuality.tdsMgL} mg/L > 45 mg/L)`,
